@@ -51,14 +51,15 @@ def main():
     parser = argparse.ArgumentParser(description='Extract and validate NPS CSV')
     parser.add_argument('--month', required=True, help='Target month in YYYY-MM format (e.g., 2025-11)')
     parser.add_argument('--product', required=True, help='Product short code (e.g., mc, cq)')
+    parser.add_argument('--data-dir', help='Product data directory name (default: derived from product code)')
     parser.add_argument('--yes', '-y', action='store_true', help='Skip confirmation prompts')
     args = parser.parse_args()
 
     target_month = args.month
     product = args.product
-    # Map product codes to folder names — add your products here
+    # Map product codes to folder names — add your products here or pass --data-dir
     PRODUCT_FOLDERS = {}  # e.g., {"p1": "Product One", "p2": "Product Two"}
-    product_folder = PRODUCT_FOLDERS.get(product, product)
+    product_folder = args.data_dir or PRODUCT_FOLDERS.get(product, product)
 
     # Validate month format
     try:

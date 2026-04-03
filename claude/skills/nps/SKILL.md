@@ -180,7 +180,7 @@ If mismatch > 1 point, warn user but continue.
 Run the tracking update script:
 
 ```bash
-python3 {SCRIPTS_DIR}/02_update_tracking.py --month {TARGET_MONTH} --product {PRODUCT_SHORT}
+python3 {SCRIPTS_DIR}/02_update_tracking.py --month {TARGET_MONTH} --product {PRODUCT_SHORT} --data-dir {PRODUCT_FOLDER}
 ```
 
 This script:
@@ -519,7 +519,7 @@ Check the response `status` field. If `200`, report: `✓ Pushed to Google Sheet
 If REST API is unavailable (key revoked, API changes), the manual CSV workflow still works:
 
 1. Download NPS CSV from Pendo dashboard (URL available via `{PENDO_URL}`)
-2. Run `python3 {SCRIPTS_DIR}/01_extract_data.py --month {TARGET_MONTH} --product {PRODUCT_SHORT} --yes`
+2. Run `python3 {SCRIPTS_DIR}/01_extract_data.py --month {TARGET_MONTH} --product {PRODUCT_SHORT} --data-dir {PRODUCT_FOLDER} --yes`
 3. Continue from Step 3 onward (02_update_tracking.py reads the same CSV format)
 
 The `01_extract_data.py` script is retained as a fallback. See deprecation note in that file.

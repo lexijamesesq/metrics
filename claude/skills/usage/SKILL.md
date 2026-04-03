@@ -28,7 +28,10 @@ Collects monthly Usage metrics (MAU, DAU, DAU/MAU ratio) for configured products
 
 ## Arguments
 
-Parse `$ARGUMENTS` for a month in `YYYY-MM` format. If empty or invalid, calculate previous month from today's date.
+The month argument is substituted positionally before this skill runs:
+- `$0` = month in `YYYY-MM` format (e.g., `2026-03`)
+
+If `$0` is empty or invalid, calculate previous month from today's date.
 
 ## Step 0: Load Configuration
 
