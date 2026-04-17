@@ -122,7 +122,34 @@ Skills read product-specific IDs from these config files at Step 0. Copy the `.s
 ### Blocked / Pending
 - TODO
 
+## Knowledge Sources & Prioritization
+
+When I need information about how this metrics framework works, I consult these in order:
+
+1. **Live data sources** — your analytics MCP tools. Query, never assume. Current data is always authoritative.
+2. **Skills** — collection skills at `claude/skills/`. These contain execution logic, config resolution, and workflow.
+3. **Knowledge/** — project-level reference docs. See `Knowledge/index.md` for the current inventory.
+4. **Domain-specific process docs** — per-metric `Process/` directories. Co-located with their metric data.
+
+### Writing posture
+
+These docs exist for me to load context efficiently across sessions; the user is a secondary reader. Terse and dense over polished prose, tables over paragraphs, no hesitation to prune.
+
+### Reading posture
+
+When I load a `Knowledge/` page during project work, I check its frontmatter `updated`. If older than 90 days, I surface the staleness before relying on the content — validate against current data sources and bump `updated` if still accurate, or edit/delete if not.
+
+### Operations
+
+- **Query-and-file** — when a session produces durable synthesis, file it as a `Knowledge/` page and update `index.md`. Don't leave synthesis in chat history.
+- **Lint** — periodic health check for orphans, malformed frontmatter, contradictions. On demand.
+
+---
+
 ## Key Documents
+
+### Knowledge Layer
+- `Knowledge/index.md` - Entry point for project-level reference docs
 
 ### Skills (`claude/skills/`)
 - `claude/skills/usage/SKILL.md` - `/usage` skill for monthly DAU/MAU collection via Pendo MCP
@@ -174,6 +201,13 @@ Hybrid naming:
 **Method:** backlog-json
 **Location:** backlog.json
 **Schema:** Minimal (id, title, description, status, source, created, context_doc)
+
+### Knowledge
+**Method:** markdown-file
+**Location:** `Knowledge/`
+**Schema:** `type/knowledge` + `project/metrics` + `updated` frontmatter (+ optional `backlog-item`)
+**Index:** `Knowledge/index.md` updated on create/delete/rename
+**Writing posture:** Agent-first, user-secondary. See Knowledge Sources & Prioritization > Writing posture.
 
 ---
 

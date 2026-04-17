@@ -13,12 +13,10 @@ Usage/Data/
 UX Bugs/Data/
 UX Bugs/Tracking/
 
+# === Knowledge layer (agent-maintained reference docs) ===
+Knowledge/
+
 # === Personal/org-specific documents ===
-design-metrics-framework.md
-metrics-architecture-session-notes.md
-spreadsheet-tab-structure-plan.md
-anticipatory-insights-concept.md
-skills-overview.md
 backlog.json
 AG Design Metrics.xlsx
 
