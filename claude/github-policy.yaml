@@ -1,0 +1,14 @@
+# Metrics — public Claude Code project for design-leader impact metrics.
+#
+# History scan (2026-05-09): zero credential patterns in any commit.
+visibility: public
+main_branch: main
+main_branch_protection: direct_push
+prep:
+  required: true
+  strictness: strict
+  ttl_hours: 24
+allowed_force_push_targets: []
+protected_branches: [main]
+secret_scanning_baseline: null
+treat_as_public_for_secrets: false
