@@ -198,9 +198,13 @@ Hybrid naming:
 ## Intake
 
 ### Tasks
-**Method:** backlog-json
-**Location:** backlog.json
-**Schema:** Minimal (id, title, description, status, source, created, context_doc)
+**Method:** Linear
+**Project ID:** YOUR_PROJECT_UUID_HERE
+**Location:** [Linear project: YOUR_PROJECT_NAME](YOUR_LINEAR_PROJECT_URL) (YOUR_TEAM team)
+**Context:** Context/
+
+### Narrative
+**Method:** Linear Project Updates
 
 ### Knowledge
 **Method:** markdown-file
