@@ -1,0 +1,67 @@
+title = "gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "operator-vault-path-literal"
+description = "Literal vault path (use {workspace_root}/ placeholder instead)"
+regex = '''~/Vaults/Notes/'''
+keywords = ["Vaults"]
+
+[[rules]]
+id = "operator-home-path"
+description = "Hardcoded macOS home path"
+regex = '''/Users/lexi/'''
+keywords = ["lexi"]
+
+[[rules]]
+id = "operator-email"
+description = "Operator email address"
+regex = '''alexis@lexi\.esq'''
+keywords = ["alexis"]
+
+[[rules]]
+id = "operator-full-name"
+description = "Operator full legal name"
+regex = '''Alexis Bussa'''
+keywords = ["Bussa"]
+
+[[rules]]
+id = "operator-preferred-name"
+description = "Operator preferred name"
+regex = '''Lexi James'''
+keywords = ["Lexi"]
+
+[[rules]]
+id = "operator-alt-email"
+description = "Operator alternate email"
+regex = '''alex@alexbussa\.com'''
+keywords = ["alexbussa"]
+
+[[rules]]
+id = "operator-username"
+description = "Operator personal identifier / username"
+regex = '''alexbussa'''
+keywords = ["alexbussa"]
+
+[[rules]]
+id = "operator-employer"
+description = "Employer name"
+regex = '''Instructure'''
+keywords = ["Instructure"]
+
+[[rules]]
+id = "operator-employer-product"
+description = "Employer product names (specific enough to identify employer)"
+regex = '''Canvas Quizzes|Mastery Connect|Parchment'''
+keywords = ["Quizzes", "Mastery", "Parchment"]
+
+[allowlist]
+paths = [
+  '''\.gitleaks\.toml$''',
+  '''CLAUDE\.md$''',
+  '''CLAUDE\.sample\.md$''',
+  '''\.claude/rules/''',
+  '''LICENSE$''',
+]
