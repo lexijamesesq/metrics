@@ -173,7 +173,20 @@ Extract from response:
 
 If mismatch > 1 point, warn user but continue.
 
-**If MCP fails:** Skip cross-validation silently. This step is non-blocking — the REST API data is authoritative.
+**If MCP is unavailable or fails (tool not in environment, connection error, timeout, auth failure):** Stop immediately. Do not silently skip. Surface the failure to the user with this exact format:
+
+> ⚠️ **Pendo MCP unavailable — cross-validation cannot run.**
+>
+> REST API returned: NPS [score], [count] responses for [TARGET_MONTH].
+> MCP error: [specific error or "tool not available in this environment"].
+>
+> Cross-validation is normally run to catch REST API discrepancies. Without it, the REST API data is the only source.
+>
+> **Proceed without cross-validation?** (yes/no)
+
+Wait for explicit user confirmation before continuing to Step 3. If the user declines, stop the run — no analysis document, no data note, no Sheets push.
+
+This is non-blocking *only* with user consent. Never bury MCP unavailability as a footnote at the end of a run.
 
 ## Step 3: Calculate NPS Metrics (Python)
 
@@ -385,8 +398,8 @@ If JPD_WATCH_LIST features appear in comment scans (Step 5), reference them natu
 - Restatements of themes already analyzed in "3 Things That Matter" — if it's already in the body, it doesn't belong here
 
 **Each paragraph structure:**
-1. State the trajectory question — what is the dataset building toward, and what is unresolved after this month?
-2. Connect this month to prior months — what's new, what's persisting, what's changing direction?
+1. State a trajectory question that advances beyond the prior month's. If last month's question was answered or partially answered, the retrospective belongs in the Summary or 3 Things That Matter — not here. Start forward.
+2. Ground the question in this month's data — one or two factual anchors. Do not recap prior Signals or re-explain themes already covered in the analysis body.
 3. State the confirmation condition: "If [specific observable thing] appears in [next month's] data, [conclusion] is confirmed." Required — a Signal without a testable hypothesis is a monitoring instruction, not a signal.
 
 If JPD_WATCH_LIST features appeared in comment scans (Step 5), surface forward-looking commentary here. Frame as: "X recently completed development — early signals suggest..." rather than attributing a specific launch date.
@@ -510,7 +523,7 @@ Check the response `status` field. If `200`, report: `✓ Pushed to Google Sheet
 
 - **1Password failure:** Stop with setup instructions (op CLI, signin, item path)
 - **REST API failure:** Show HTTP error, suggest checking API key. Provide manual CSV fallback instructions.
-- **MCP `guideMetrics` failure:** Skip cross-validation, proceed (non-blocking)
+- **MCP `guideMetrics` failure or unavailability:** Stop and surface to user (see Step 2). Never skip silently. Proceed only with explicit user consent.
 - **Python script failure:** Show error output, suggest manual verification
 - **Atlassian MCP timeout:** Stop and instruct user to exit/resume
 
