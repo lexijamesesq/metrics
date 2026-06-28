@@ -1,0 +1,17 @@
+# gitleaks config for Metrics (public design-metrics repo).
+# Operator-specific PII rules loaded from .gitleaks-operator-rules.toml
+# (gitignored symlink -> ~/bin/dotty-private/gitleaks-operator-rules.toml).
+
+title = "Metrics gitleaks config"
+
+[extend]
+path = ".gitleaks-operator-rules.toml"
+
+[allowlist]
+paths = [
+  '''\.gitleaks\.toml$''',
+  '''CLAUDE\.md$''',
+  '''CLAUDE\.sample\.md$''',
+  '''\.claude/rules/''',
+  '''LICENSE$''',
+]

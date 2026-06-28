@@ -41,3 +41,6 @@ DesignSystem/
 .claude
 .github-prep-status.json
 .DS_Store
+
+# operator PII detection rules (gitignored symlink -> dotty-private)
+.gitleaks-operator-rules.toml
