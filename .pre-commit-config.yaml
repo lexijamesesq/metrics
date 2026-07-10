@@ -1,11 +1,20 @@
+# default_install_hook_types + default_stages: see dotty's .pre-commit-config.yaml
+# for the full rationale (a bare `pre-commit install` must wire pre-commit, pre-push,
+# AND commit-msg, and default_stages keeps hooks with no explicit `stages` key from
+# being silently promoted to those other stages).
+default_install_hook_types: [pre-commit, pre-push, commit-msg]
+default_stages: [pre-commit]
+
 repos:
+  - repo: https://github.com/lexijamesesq/dotty
+    rev: v2026.07.10
+    hooks:
+      - id: gitleaks-staged
+      - id: gitleaks-pre-push
+      - id: gitleaks-commit-msg
+
   - repo: local
     hooks:
-      - id: gitleaks
-        name: gitleaks (secret + operator-pattern scan)
-        entry: gitleaks protect --staged --config .gitleaks.toml --verbose
-        language: system
-        pass_filenames: false
       - id: check-file-presence
         name: check required files exist (README, LICENSE)
         entry: bash -c 'missing=""; [ ! -f README.md ] && missing="$missing README.md"; [ ! -f LICENSE ] && missing="$missing LICENSE"; [ -n "$missing" ] && echo "Missing required files:$missing" && exit 1; exit 0'
