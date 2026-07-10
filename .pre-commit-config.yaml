@@ -10,7 +10,7 @@ repos:
     hooks:
       - id: gitleaks
         name: gitleaks (secret + operator-pattern scan)
-        entry: gitleaks protect --staged --config .gitleaks.toml --verbose --redact
+        entry: gitleaks protect --staged --config .gitleaks.toml --verbose --redact --ignore-gitleaks-allow
         language: system
         pass_filenames: false
       - id: check-file-presence
