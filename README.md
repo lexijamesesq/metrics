@@ -1,4 +1,4 @@
-A Claude Code project that tracks five design metrics -- NPS qualitative feedback, UX bugs, DAU/MAU usage, experimentation, and design system adoption -- to demonstrate Design's impact on product engagement and quality. Built for design leaders who need repeatable, automated metrics collection using Pendo, Jira, and Google Sheets, orchestrated through Claude Code skills.
+A Claude Code project that tracks five design metrics — NPS qualitative feedback, UX bugs, DAU/MAU usage, experimentation, and design system adoption — to demonstrate Design's impact on product engagement and quality. Built for design leaders who need repeatable, automated metrics collection using Pendo, Jira, and Google Sheets, orchestrated through Claude Code skills.
 
 ## Installation
 
@@ -46,9 +46,9 @@ cp jira-config.sample.md jira-config.md
 
 | Skill | What it does | Details |
 |-------|--------------|---------|
-| `/nps` | Monthly NPS analysis -- REST API fetch, qualitative theme analysis, structured output | [NPS/README.md](NPS/README.md) |
+| `/nps` | Monthly NPS analysis — REST API fetch, qualitative theme analysis, structured output | [NPS/README.md](NPS/README.md) |
 | `/usage` | Monthly DAU/MAU collection for all configured products via Pendo MCP | [Usage/README.md](Usage/README.md) |
-| `/ux-bugs` | Quarterly UX bug metrics -- priority breakdown, TTR compliance, Jira due date validation | [UX Bugs/README.md](UX%20Bugs/README.md) |
+| `/ux-bugs` | Quarterly UX bug metrics — priority breakdown, TTR compliance, Jira due date validation | [UX Bugs/README.md](UX%20Bugs/README.md) |
 
 ### Supporting files
 
@@ -56,7 +56,7 @@ cp jira-config.sample.md jira-config.md
 |----------|------|--------------|
 | `NPS/Scripts/fetch-nps-responses.py` | Script | Fetches NPS responses from Pendo REST API, correlates scores with comments, outputs CSV |
 | `NPS/Scripts/02_update_tracking.py` | Script | Calculates NPS metrics from extracted CSV |
-| `UX Bugs/Scripts/collect-ux-bugs.py` | Script | Quarterly bug calculation logic -- reference implementation for the `/ux-bugs` skill |
+| `UX Bugs/Scripts/collect-ux-bugs.py` | Script | Quarterly bug calculation logic — reference implementation for the `/ux-bugs` skill |
 | `Infrastructure/metrics-api-appscript.js` | Apps Script | Google Sheets web app for automated data push (upsert by product + period) |
 | `Infrastructure/metrics-api-deployment.md` | Guide | Step-by-step Apps Script deployment instructions |
 | `UX Bugs/Process/ux-bug-priority-levels.md` | Reference | P1-P4 priority definitions and TTR window criteria |
@@ -65,7 +65,7 @@ cp jira-config.sample.md jira-config.md
 
 Skills read configuration at runtime from three sources:
 
-**You configure:** `CLAUDE.md` (project-level settings like 1Password path and Sheets URL), `pendo-config.md` (all Pendo IDs -- subscriptions, guides, polls, segments, pages), and `jira-config.md` (Atlassian connection, project keys, custom fields, TTR windows).
+**You configure:** `CLAUDE.md` (project-level settings like 1Password path and Sheets URL), `pendo-config.md` (all Pendo IDs — subscriptions, guides, polls, segments, pages), and `jira-config.md` (Atlassian connection, project keys, custom fields, TTR windows).
 
 **Skills handle:** Reading the config files at Step 0, validating that required values exist, stopping with setup instructions if a config file is missing, and referencing values by name throughout execution.
 
@@ -99,13 +99,13 @@ Queries Jira for all UX bugs, calculates quarterly metrics, validates TTR due da
 
 ### Manual updates
 
-Experimentation and Design System metrics are updated manually by the team in the Google Sheet. No skills are provided for these -- the spreadsheet tabs exist and are populated directly.
+Experimentation and Design System metrics are updated manually by the team in the Google Sheet. No skills are provided for these — the spreadsheet tabs exist and are populated directly.
 
 ## How It Works
 
-Three skills collect metrics from two external platforms (Pendo and Jira) and write structured data notes with YAML frontmatter. Each skill runs independently -- invoke whichever metrics you need, on whatever cadence works for your team.
+Three skills collect metrics from two external platforms (Pendo and Jira) and write structured data notes with YAML frontmatter. Each skill runs independently — invoke whichever metrics you need, on whatever cadence works for your team.
 
-The data architecture has three layers. Individual structured notes in `{Metric}/Tracking/` are the source of truth, with YAML frontmatter matching the Google Sheet schema. Google Sheets is a derived output pushed automatically by each skill at the end of a run (non-blocking -- local notes are written regardless). NPS analysis documents are monthly markdown files with qualitative theme analysis, evidence-based insights, and forward-looking signals.
+The data architecture has three layers. Individual structured notes in `{Metric}/Tracking/` are the source of truth, with YAML frontmatter matching the Google Sheet schema. Google Sheets is a derived output pushed automatically by each skill at the end of a run (non-blocking — local notes are written regardless). NPS analysis documents are monthly markdown files with qualitative theme analysis, evidence-based insights, and forward-looking signals.
 
 Each skill reads its configuration at Step 0 from markdown config files at the project root. Pendo skills read `pendo-config.md`; Jira skills read `jira-config.md`; both check `CLAUDE.md` for project-level settings. If a config file is missing, the skill stops with setup instructions rather than failing silently.
 
@@ -113,16 +113,16 @@ The Python scripts handle data fetching (REST API) and calculation (NPS metrics,
 
 ## Customization
 
-- **Different products or platforms:** Edit `pendo-config.md` to add your product entries with the correct Pendo IDs. The `/usage` skill demonstrates three query patterns (visitor-level, page-level single, page-level multi) -- adapt the steps to match your products' Pendo configuration.
+- **Different products or platforms:** Edit `pendo-config.md` to add your product entries with the correct Pendo IDs. The `/usage` skill demonstrates three query patterns (visitor-level, page-level single, page-level multi) — adapt the steps to match your products' Pendo configuration.
 - **Without Google Sheets:** Skip the Apps Script deployment. Skills write local data notes regardless and skip the Sheets push silently when `sheets-api-config.md` is absent.
-- **Without Jira / JPD:** The `/nps` skill's JPD watch list step is non-blocking -- if Jira config is missing or the query returns no results, the analysis proceeds without feature context. The `/ux-bugs` skill requires Jira.
+- **Without Jira / JPD:** The `/nps` skill's JPD watch list step is non-blocking — if Jira config is missing or the query returns no results, the analysis proceeds without feature context. The `/ux-bugs` skill requires Jira.
 - **Different TTR windows:** Edit `jira-config.md` to set priority-to-days mappings that match your organization's SLA commitments.
 
 ## Security
 
 Review skills before installing. They load into Claude's context and execute with your permissions. Audit the contents of `claude/skills/` before use.
 
-The `/nps` skill accesses your Pendo API key via 1Password CLI -- it never stores the key in a file. The `/ux-bugs` skill can update Jira issues (due dates and comments) when you approve the changes during a run. Config files containing your org-specific IDs are gitignored.
+The `/nps` skill accesses your Pendo API key via 1Password CLI — it never stores the key in a file. The `/ux-bugs` skill can update Jira issues (due dates and comments) when you approve the changes during a run. Config files containing your org-specific IDs are gitignored.
 
 ## License
 
