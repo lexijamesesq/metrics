@@ -166,43 +166,21 @@ Use the actual project keys from `PROJECT_KEYS` as the JSON section headers.
 
 ## Step 5: Calculate Quarterly Metrics
 
-Calculate metrics for ALL quarters of `CURRENT_YEAR` (and prior year if data exists) for **each project in `PROJECT_KEYS`**. Use the logic from `UX Bugs/Scripts/collect-ux-bugs.py`.
+Run the calculation script against the snapshot written in Step 4:
 
-### Quarter Date Ranges
-
-```python
-def get_quarter_dates(year, quarter):
-    quarters = {
-        "Q1": (f"{year}-01-01", f"{year}-03-31"),
-        "Q2": (f"{year}-04-01", f"{year}-06-30"),
-        "Q3": (f"{year}-07-01", f"{year}-09-30"),
-        "Q4": (f"{year}-10-01", f"{year}-12-31"),
-    }
-    return quarters[quarter]
+```bash
+python3 "UX Bugs/Scripts/collect-ux-bugs.py" --snapshot "UX Bugs/Data/ux-bugs-data-{COLLECTION_DATE}.json"
 ```
 
-### TTR Windows
+The script is the single home of the calculation logic — never re-derive a metric in-context. It reads TTR windows from `jira-config.md` (`## TTR Windows` > `### UX Bugs`) and emits JSON with, per project, per quarter (current year + prior year):
 
-Use `TTR_WINDOWS` from config (loaded in Step 0):
+- `total_created`, `p1`–`p4`, `other_priority`, `total_resolved`, `pct_remediated`, `pct_outside_ttr`, `outside_ttr_keys`, `ttr_scope_count`, `has_data` (true when created, resolved, or violations are nonzero)
+- `status`: `complete` (quarter ended before collection date), `in_progress` (collection date falls inside the quarter), `future` (quarter starts after collection date)
+- `current_state` per project: `open_total`, `ttr_scope_open` (customer-reported P1–P3), and the violation list
 
-```python
-# Example: {"P1": 45, "P2": 60, "P3": 180, "P4": None}
-TTR_WINDOWS = {loaded from config}
-```
+Metric definitions live in the script's docstring — one home, not two. The script is deterministic; a drift there surfaces as a value change.
 
-### For Each Quarter, Calculate:
-
-1. **Total Created:** Count **customer-reported** bugs (open + resolved) with `created` date in quarter range
-2. **P1-P4:** Count customer-reported bugs created in quarter by priority level
-3. **Total Resolved:** Count **customer-reported** bugs with `resolved` date in quarter range
-4. **% Remediated:** `total_resolved / total_created` (0 if no bugs created). Express as decimal (e.g., 0.33)
-5. **% Outside TTR:**
-   - Scope: **customer-reported P1/P2/P3 bugs only** — P4 excluded from both numerator and denominator (no TTR window)
-   - Find all in-scope bugs "open during quarter" = created before/during quarter AND (not resolved OR resolved during/after quarter start)
-   - For each: calculate TTR deadline = created + TTR_WINDOWS[priority]
-   - Bug is "outside TTR" if TTR deadline <= quarter end AND bug was still open after deadline
-   - `pct_outside_ttr = outside_ttr_count / total_open_during_quarter`
-   - Express as decimal (e.g., 0.33)
+If the script exits non-zero or emits `warnings` (e.g., an unrecognized priority value), surface them to the user before continuing.
 
 **Key principle:** Recalculate ALL quarters every run. Historical data improves as bugs are resolved or discovered.
 
@@ -224,6 +202,7 @@ type: metrics/ux-bugs
 project: {PROJECT_KEY}
 quarter: "Q1 2026"
 quarter_short: 2026-q1
+quarter_status: complete
 total_created: 1
 p1: 0
 p2: 0
@@ -240,15 +219,149 @@ collection_date: {COLLECTION_DATE}
 Collected via Atlassian MCP on {COLLECTION_DATE}.
 ```
 
-Write notes only for quarters that have actual data (total_created > 0 OR total_resolved > 0 OR pct_outside_ttr > 0).
+Write a note for a quarter when BOTH hold:
 
-## Step 7: Validate and Update TTR Due Dates
+1. `status` is `complete` or `in_progress`. Quarters with `status: future` are never written — a projected violation is not data.
+2. `has_data` is true, OR a note for that quarter already exists in `UX Bugs/Tracking/`. An existing note whose metrics now recompute to zero gets corrected, never left stale.
+
+## Step 7: Write TTR Violation Files and Current State Note
+
+### TTR Violation Files
+
+For each project in `PROJECT_KEYS`:
+
+**Directory:** `UX Bugs/Tracking/TTR Violations/`
+
+Use `Glob` to find all existing files matching `UX Bugs/Tracking/TTR Violations/{project_key_lowercase}-*.md`. Delete each using `mcp__obsidian__delete_note` (set `confirmPath` = `path`).
+
+For each entry in the script's `current_state.violations` for this project (customer-reported P1–P3 with `ttr_deadline <= COLLECTION_DATE` — the same scope as the quarterly TTR metric, so the violation files and the percentages always agree):
+
+**File:** `UX Bugs/Tracking/TTR Violations/{bug-key-lowercase}.md`
+
+```yaml
+---
+type: metrics/ux-bugs-ttr-violation
+project: {PROJECT_KEY}
+bug_key: {BUG_KEY}
+priority: {PRIORITY}
+summary: "{SUMMARY}"
+created: {CREATED_DATE}
+ttr_deadline: {TTR_DEADLINE}
+link: https://{JIRA_BASE_URL}/browse/{BUG_KEY}
+---
+```
+
+Body: leave empty. These files are DERIVED — delete and recreate each run.
+
+### Current State Notes
+
+For each project in `PROJECT_KEYS`:
+
+**File:** `UX Bugs/Tracking/{project_key_lowercase}-uxbugs-current-state.md`
+
+This file is DERIVED — safe to overwrite each run. N = `current_state.open_total`, M = violation count, S = `current_state.ttr_scope_open`, PCT_INT = percentage of the TTR scope rounded to the nearest integer (never of all open bugs — mixing the two denominators is how 5 of 10 read as 24%).
+
+**Frontmatter:**
+
+```yaml
+---
+updated: {COLLECTION_DATE}
+---
+```
+
+**Body — heading and summary line:**
+
+```
+# {PROJECT_KEY} UX Bugs — Current State
+
+**As of {COLLECTION_DATE}:** {N} open bugs; {M} of {S} customer-reported P1–P3 outside TTR ({PCT_INT}% of TTR scope)
+
+## Bugs Outside TTR Window
+```
+
+**Body — inline base block** (fenced code block with language `base`, immediately after the heading):
+
+```base
+filters:
+  and:
+    - 'type == "metrics/ux-bugs-ttr-violation"'
+    - 'project == "{PROJECT_KEY}"'
+views:
+  - type: table
+    name: {PROJECT_KEY} TTR Violations
+    order:
+      - bug_key
+      - priority
+      - summary
+      - created
+      - ttr_deadline
+```
+
+## Step 8: Display Summary
+
+Output to user:
+
+For each project in `PROJECT_KEYS`, output:
+
+```
+## UX Bugs Collection Complete — {COLLECTION_DATE}
+
+### Quarterly Summary ({PROJECT_KEY})
+
+| Quarter | Created | P1 | P2 | P3 | P4 | Resolved | % Remediated | % Outside TTR |
+|---------|---------|----|----|----|----|----------|--------------|---------------|
+[table rows — same quarters as Step 6: complete and in_progress only]
+
+### {PROJECT_KEY}: {N} open bugs; {M} of {S} customer-reported P1–P3 outside TTR ({PCT}% of TTR scope)
+```
+
+Then after all projects:
+
+```
+### TTR Validation: {discrepancy count} issues found
+
+Files updated:
+- UX Bugs/Data/ux-bugs-data-{COLLECTION_DATE}.json
+- UX Bugs/Tracking/{project_key_lowercase}-uxbugs-{YEAR}-q{N}.md (per project, per quarter)
+- UX Bugs/Tracking/TTR Violations/ ({total} violation files)
+- UX Bugs/Tracking/{project_key_lowercase}-uxbugs-current-state.md (per project)
+```
+
+## Step 9: Push to Google Sheets
+
+Read the config:
+```
+Read: Infrastructure/sheets-api-config.md
+```
+
+If the file is missing, skip the push and say so in the Step 9 summary — a skipped push means the Sheet is stale, and silence is how that gets forgotten.
+
+Extract `web_app_url` from the config. POST each quarter with data as a batch for each project.
+
+Convert `COLLECTION_DATE` from YYYY-MM-DD to M/D/YYYY for the `Date` field (e.g. `2026-03-05` → `3/5/2026`).
+
+```bash
+python3 -c "
+import urllib.request, json
+payload = json.dumps({'metric_type':'ux_bugs','data':[{'Quarter':'{QUARTER}','Project':'{PROJECT}','Total_Created':{total_created},'P1':{p1},'P2':{p2},'P3':{p3},'P4':{p4},'Total_Resolved':{total_resolved},'%_Remediated':{pct_remediated},'%_Outside_TTR':{pct_outside_ttr},'Date':'{M/D/YYYY}'}]}).encode()
+req = urllib.request.Request('{WEB_APP_URL}', data=payload, headers={'Content-Type': 'application/json'})
+with urllib.request.urlopen(req) as r: print(r.read().decode())
+"
+```
+
+Post exactly the quarters written in Step 6 — `status` complete or in_progress, never future. Each POST is a batch array of those quarters for that project.
+
+Check each response `status` field. If `200`, report: `✓ Pushed to Google Sheets ({project}: inserted N, updated N)`. If not `200`, report the error but do not fail the skill.
+
+## Step 10: Validate and Update TTR Due Dates
+
+This step runs LAST — after all read-only work (notes, violation files, current-state, summary, Sheets push) is complete. The operator sees the full collection results before deciding on any Jira writes.
 
 For each open bug across **all projects in `PROJECT_KEYS`** with `customer_reported=true` and priority P1/P2/P3:
 
 1. Calculate expected due date: `created + TTR_WINDOWS[priority]` days
 2. Compare to current `duedate` field
-3. Collect all discrepancies from both projects before prompting
+3. Collect all discrepancies from every project before prompting
 
 ### Report Discrepancies
 
@@ -294,136 +407,15 @@ mcp__atlassian__addCommentToJiraIssue(
 )
 ```
 
-After Jira updates, update the local JSON snapshot with corrected due dates.
+After each successful update, append one line to `UX Bugs/Data/duedate-changes.jsonl` (create on first use; `python3 -c "import json; open('UX Bugs/Data/duedate-changes.jsonl','a').write(json.dumps({...})+'\n')"` — open in append mode so prior entries are never overwritten):
 
-## Step 8: Write TTR Violation Files and Current State Note
-
-### TTR Violation Files
-
-For each project in `PROJECT_KEYS`:
-
-**Directory:** `UX Bugs/Tracking/TTR Violations/`
-
-Use `Glob` to find all existing files matching `UX Bugs/Tracking/TTR Violations/{project_key_lowercase}-*.md`. Delete each using `mcp__obsidian__delete_note` (set `confirmPath` = `path`).
-
-For each open bug in this project where `calculated_ttr_deadline <= COLLECTION_DATE`:
-
-**File:** `UX Bugs/Tracking/TTR Violations/{bug-key-lowercase}.md`
-
-```yaml
----
-type: metrics/ux-bugs-ttr-violation
-project: {PROJECT_KEY}
-bug_key: {BUG_KEY}
-priority: {PRIORITY}
-summary: "{SUMMARY}"
-created: {CREATED_DATE}
-ttr_deadline: {TTR_DEADLINE}
-link: https://{JIRA_BASE_URL}/browse/{BUG_KEY}
----
+```json
+{"date": "{COLLECTION_DATE}", "key": "{BUG_KEY}", "old_duedate": "{CURRENT}", "new_duedate": "{EXPECTED}"}
 ```
 
-Body: leave empty. These files are DERIVED — delete and recreate each run.
+Log the line BEFORE the Jira call, so a crash mid-batch still records the intent. Do NOT modify the snapshot — it stays exactly as collected (Step 4 immutability).
 
-### Current State Notes
-
-For each project in `PROJECT_KEYS`:
-
-**File:** `UX Bugs/Tracking/{project_key_lowercase}-uxbugs-current-state.md`
-
-This file is DERIVED — safe to overwrite each run. N = open bug count, M = outside TTR count, PCT_INT = integer percentage.
-
-**Frontmatter:**
-
-```yaml
----
-updated: {COLLECTION_DATE}
----
-```
-
-**Body — heading and summary line:**
-
-```
-# {PROJECT_KEY} UX Bugs — Current State
-
-**As of {COLLECTION_DATE}:** {N} open bugs, {M} outside TTR ({PCT_INT}%)
-
-## Bugs Outside TTR Window
-```
-
-**Body — inline base block** (fenced code block with language `base`, immediately after the heading):
-
-```base
-filters:
-  and:
-    - 'type == "metrics/ux-bugs-ttr-violation"'
-    - 'project == "{PROJECT_KEY}"'
-views:
-  - type: table
-    name: {PROJECT_KEY} TTR Violations
-    order:
-      - bug_key
-      - priority
-      - summary
-      - created
-      - ttr_deadline
-```
-
-## Step 9: Display Summary
-
-Output to user:
-
-For each project in `PROJECT_KEYS`, output:
-
-```
-## UX Bugs Collection Complete — {COLLECTION_DATE}
-
-### Quarterly Summary ({PROJECT_KEY})
-
-| Quarter | Created | P1 | P2 | P3 | P4 | Resolved | % Remediated | % Outside TTR |
-|---------|---------|----|----|----|----|----------|--------------|---------------|
-[table rows]
-
-### {PROJECT_KEY}: {N} open bugs, {M} outside TTR ({PCT}%)
-```
-
-Then after all projects:
-
-```
-### TTR Validation: {discrepancy count} issues found
-
-Files updated:
-- UX Bugs/Data/ux-bugs-data-{COLLECTION_DATE}.json
-- UX Bugs/Tracking/{project_key_lowercase}-uxbugs-{YEAR}-q{N}.md (per project, per quarter)
-- UX Bugs/Tracking/TTR Violations/ ({total} violation files)
-- UX Bugs/Tracking/{project_key_lowercase}-uxbugs-current-state.md (per project)
-```
-
-## Step 10: Push to Google Sheets
-
-Read the config:
-```
-Read: Infrastructure/sheets-api-config.md
-```
-
-If file is missing, skip silently — summary table output is the fallback.
-
-Extract `web_app_url` from the config. POST each quarter with data as a batch for each project.
-
-Convert `COLLECTION_DATE` from YYYY-MM-DD to M/D/YYYY for the `Date` field (e.g. `2026-03-05` → `3/5/2026`).
-
-```bash
-python3 -c "
-import urllib.request, json
-payload = json.dumps({'metric_type':'ux_bugs','data':[{'Quarter':'{QUARTER}','Project':'{PROJECT}','Total_Created':{total_created},'P1':{p1},'P2':{p2},'P3':{p3},'P4':{p4},'Total_Resolved':{total_resolved},'%_Remediated':{pct_remediated},'%_Outside_TTR':{pct_outside_ttr},'Date':'{M/D/YYYY}'}]}).encode()
-req = urllib.request.Request('{WEB_APP_URL}', data=payload, headers={'Content-Type': 'application/json'})
-with urllib.request.urlopen(req) as r: print(r.read().decode())
-"
-```
-
-Post all quarters with data for each project in `PROJECT_KEYS`. Each POST is a batch array of all quarters for that project.
-
-Check each response `status` field. If `200`, report: `✓ Pushed to Google Sheets ({project}: inserted N, updated N)`. If not `200`, report the error but do not fail the skill.
+If an `editJiraIssue` call fails, stop the batch there and report the applied changes (from the log) plus the remaining unapplied bugs. If the edit succeeds but the follow-up comment fails, the update counts as applied — log it with `"comment_failed": true` and continue.
 
 ## Error Handling
 

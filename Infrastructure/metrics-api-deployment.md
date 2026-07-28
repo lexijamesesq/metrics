@@ -5,6 +5,8 @@ Deployment instructions for the Design Metrics API web app that writes NPS, Usag
 **Script source:** `metrics-api-appscript.js` (same directory)
 **Target sheet:** `[your Google Sheet ID]`
 
+> **Deployed 2026-07-27:** `upsertRows` now merges on update — a payload key absent from an UPDATE row preserves that column's existing cell value instead of blanking it (so a hand-added `Link_Analysis` Google Doc link survives a re-run that no longer sends that key).
+
 ---
 
 ## Prerequisites
@@ -17,10 +19,10 @@ Deployment instructions for the Design Metrics API web app that writes NPS, Usag
 ### Tab Schemas (Row 1 Headers)
 
 **NPS_Data:**
-`Product | Month | Score | Responses | Promoter_Pct | Passive_Pct | Detractor_Pct | Trend | Features_Launched | Interpretation | Link_Analysis | Link_Pendo`
+`Product | Month | Score | Responses | Promoter_Pct | Passive_Pct | Detractor_Pct | MoM_Change_Pct | Interpretation | Link_Analysis | Link_Pendo`
 
 **Usage_Data:**
-`Product | Month | Total_MAU | Teacher_MAU | Student_MAU | Avg_DAU | Peak_DAU | DAU_MAU_Ratio | MoM_Change_Pct`
+`Product | Month | Total_MAU | Teacher_MAU | Student_MAU | Avg_DAU | Peak_DAU | DAU_MAU_Ratio | MoM_Change_Pct | YoY_Change_Pct`
 
 **UXBugs_Data:**
 `Quarter | Project | Total_Created | P1 | P2 | P3 | P4 | Total_Resolved | %_Remediated | %_Outside_TTR | Date`
