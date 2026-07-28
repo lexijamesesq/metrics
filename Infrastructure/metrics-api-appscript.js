@@ -4,7 +4,7 @@
  * Accepts JSON payloads via doPost() and writes to specific tabs
  * in the Design Metrics Google Sheet.
  *
- * Target Sheet: [your Google Sheet ID — set SHEET_ID constant below]
+ * Target Sheet: bound to its parent Google Sheet (getActiveSpreadsheet)
  *
  * Supported metric_type values: nps, usage, ux_bugs
  * Accepts single row or batch (array) payloads.
@@ -19,7 +19,9 @@
 
 // ─── Configuration ──────────────────────────────────────────────────────────
 
-const SHEET_ID = '[enter sheet id here]';
+// Bound scripts (Extensions > Apps Script) use getActiveSpreadsheet().
+// Standalone scripts: set this to your Sheet ID string.
+const SHEET_ID = null;
 
 const CONFIG = {
   nps: {
@@ -132,7 +134,7 @@ function doPost(e) {
  */
 function upsertRows(metricType, rows) {
   const config = CONFIG[metricType];
-  const ss = SpreadsheetApp.openById(SHEET_ID);
+  const ss = SHEET_ID ? SpreadsheetApp.openById(SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(config.tabName);
 
   if (!sheet) {
@@ -179,20 +181,29 @@ function upsertRows(metricType, rows) {
       }
     }
 
-    // Build the row values array in column order
-    const rowValues = config.columns.map(col => {
-      const val = processedRow[col];
-      return val !== undefined ? val : '';
-    });
-
     if (matchRowIndex >= 0) {
       // UPDATE existing row (matchRowIndex is 0-based in data, +2 for sheet row)
+      //
+      // Merge-on-update (2026-07-27): a key absent from the payload preserves
+      // the existing cell's current value instead of blanking it. This lets
+      // hand-maintained cells (e.g. NPS Link_Analysis, filled in manually
+      // with a Google Doc link) survive a skill re-run that no longer sends
+      // that key. INSERT stays absent-key-to-'' below — a brand-new row has
+      // no existing value to preserve.
+      const rowValues = config.columns.map((col, colIdx) => {
+        const val = processedRow[col];
+        return val !== undefined ? val : existingData[matchRowIndex][colIdx];
+      });
       const sheetRow = matchRowIndex + 2;
       sheet.getRange(sheetRow, 1, 1, lastCol).setValues([rowValues]);
       updated++;
       details.push({ action: 'updated', key: incomingKey, sheet_row: sheetRow });
     } else {
       // INSERT new row, copy full format from row above (includes borders + banding)
+      const rowValues = config.columns.map(col => {
+        const val = processedRow[col];
+        return val !== undefined ? val : '';
+      });
       const newRow = sheet.getLastRow() + 1;
       sheet.insertRowAfter(sheet.getLastRow());
       sheet.getRange(newRow - 1, 1, 1, lastCol).copyFormatToRange(sheet, 1, lastCol, newRow, newRow);
@@ -363,4 +374,94 @@ function testBatchUsage() {
 
   const result = doPost(mockEvent);
   Logger.log(result.getContent());
+}
+
+/**
+ * Test merge-on-update: verifies that absent keys preserve existing cell values.
+ *
+ * Step 1: INSERT a test NPS row WITH Link_Analysis set.
+ * Step 2: UPDATE the same row WITHOUT Link_Analysis in the payload.
+ * Step 3: Read the cell back and verify Link_Analysis survived.
+ * Step 4: Clean up the test row.
+ *
+ * Run from the Apps Script editor after deploying. Check the Execution log.
+ */
+function testMergeOnUpdate() {
+  var testProduct = 'MergeTest';
+  var testMonth = '1900-01';
+
+  // Step 1: Insert with Link_Analysis
+  var insert = doPost({
+    postData: {
+      contents: JSON.stringify({
+        metric_type: 'nps',
+        data: {
+          Product: testProduct,
+          Month: testMonth,
+          Score: -10,
+          Responses: 50,
+          Promoter_Pct: 0.20,
+          Passive_Pct: 0.30,
+          Detractor_Pct: 0.50,
+          MoM_Change_Pct: 0,
+          Interpretation: 'Merge test - safe to delete',
+          Link_Analysis: 'https://example.com/SHOULD-SURVIVE',
+          Link_Pendo: 'https://example.com/pendo'
+        }
+      })
+    }
+  });
+  var insertResult = JSON.parse(insert.getContent());
+  Logger.log('INSERT: ' + JSON.stringify(insertResult));
+
+  if (insertResult.status !== 200) {
+    Logger.log('FAIL: insert failed');
+    return;
+  }
+
+  // Step 2: Update WITHOUT Link_Analysis
+  var update = doPost({
+    postData: {
+      contents: JSON.stringify({
+        metric_type: 'nps',
+        data: {
+          Product: testProduct,
+          Month: testMonth,
+          Score: -5,
+          Responses: 55,
+          Promoter_Pct: 0.25,
+          Passive_Pct: 0.30,
+          Detractor_Pct: 0.45,
+          MoM_Change_Pct: 5,
+          Interpretation: 'Updated without Link_Analysis',
+          Link_Pendo: 'https://example.com/pendo-updated'
+        }
+      })
+    }
+  });
+  var updateResult = JSON.parse(update.getContent());
+  Logger.log('UPDATE: ' + JSON.stringify(updateResult));
+
+  // Step 3: Read back and check
+  var ss = SHEET_ID ? SpreadsheetApp.openById(SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('NPS_Data');
+  var row = updateResult.details[0].sheet_row;
+  var cols = CONFIG.nps.columns;
+  var linkIdx = cols.indexOf('Link_Analysis');
+  var cellValue = sheet.getRange(row, linkIdx + 1).getValue();
+
+  if (cellValue === 'https://example.com/SHOULD-SURVIVE') {
+    Logger.log('PASS: Link_Analysis preserved on update (' + cellValue + ')');
+  } else {
+    Logger.log('FAIL: Link_Analysis was "' + cellValue + '", expected "https://example.com/SHOULD-SURVIVE"');
+  }
+
+  // Also verify the updated fields took effect
+  var scoreIdx = cols.indexOf('Score');
+  var scoreValue = sheet.getRange(row, scoreIdx + 1).getValue();
+  Logger.log('Score updated to: ' + scoreValue + ' (expected -5)');
+
+  // Step 4: Clean up
+  sheet.deleteRow(row);
+  Logger.log('Cleaned up test row ' + row);
 }
