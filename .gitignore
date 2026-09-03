@@ -1,8 +1,12 @@
-# === Private configuration ===
-CLAUDE.md
+# === Private instance config ===
+.claude/instance.md
 pendo-config.md
 jira-config.md
-claude/settings.local.json
+.claude/settings.local.json
+
+# === Financial/renewal-pipeline data (never git-tracked; see CLAUDE.md Stop Rules) ===
+XPL/
+.claude/skills/xpl/
 
 # === Created content (data, analysis, tracking) ===
 NPS/Data/
@@ -38,7 +42,6 @@ InstUI/
 DesignSystem/
 
 # === Local infrastructure ===
-.claude
 .github-prep-status.json
 .DS_Store
 

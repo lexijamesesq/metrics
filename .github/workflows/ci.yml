@@ -1,0 +1,88 @@
+name: CI
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Install uv 0.11.22
+        run: pip install uv==0.11.22
+      - name: ruff
+        run: uvx ruff@0.16.5 check --force-exclude .
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
+        with:
+          scandir: '.'
+          ignore_paths: .git
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      # A composite action (not gitleaks/gitleaks-action) — same reasoning as
+      # dotty's .github/README.md: explicit control over scan range and
+      # gitleaks:allow handling, not the vendor action's undocumented
+      # defaults. Pinned to dotty's merge SHA, only reachable once it's on
+      # dotty main.
+      - name: Setup gitleaks
+        uses: lexijamesesq/dotty/.github/actions/setup-gitleaks@1fe38aab22976e13e3361ac363fd7dd23e68eea2
+        with:
+          version: '8.30.1'
+      - name: gitleaks scan (base rules only, PR range, redacted)
+        env:
+          # Base rules only: a CI runner has no dotty-private checkout, so
+          # .gitleaks.toml's [extend] (the operator's private PII ruleset,
+          # loaded through a gitignored symlink) can't resolve here — see
+          # .gitleaks-ci.toml's own header. Public repo: the operator's PII
+          # rules never reach CI either way; --redact keeps any real
+          # finding's matched text out of the log regardless.
+          RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          # Fail-closed range validation, mirroring dotty's
+          # gitleaks-pre-push.sh: `gitleaks git --log-opts="<range>"` is
+          # documented (gitleaks 8.30.1) to FAIL OPEN on an unresolvable
+          # range — it logs a git fatal error, reports "0 commits scanned" /
+          # "no leaks found", and exits 0. A pull_request event's base/head
+          # SHAs are always real commits, but we still verify the range
+          # resolves and treat scanner stderr carrying `fatal:` as an
+          # untrustworthy exit code, never a pass.
+          if ! count="$(git rev-list --count "$RANGE")"; then
+            echo "::error::commit range '$RANGE' did not resolve — refusing to trust an unscanned range"
+            exit 1
+          fi
+          echo "Scanning $count commit(s) in range $RANGE"
+          errf="$(mktemp)"
+          gitleaks git . \
+            --log-opts="$RANGE" \
+            --config=.gitleaks-ci.toml \
+            --no-banner --redact --ignore-gitleaks-allow \
+            2>"$errf"
+          rc=$?
+          cat "$errf" >&2
+          if grep -qE 'fatal:|stderr is not empty' "$errf"; then
+            echo "::error::gitleaks reported a git error scanning the range — its exit code is untrustworthy here, failing closed"
+            exit 1
+          fi
+          exit "$rc"

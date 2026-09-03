@@ -236,8 +236,9 @@ def main():
     responses_norm = [squash(normalize(r)) for r in responses_raw]
 
     findings = []
-    add = lambda sev, check, detail: findings.append(
-        {"severity": sev, "check": check, "detail": detail})
+
+    def add(sev, check, detail):
+        findings.append({"severity": sev, "check": check, "detail": detail})
 
     # --- structure ---
     sections = find_sections(text)

@@ -337,7 +337,7 @@ def main():
     nps = round((promoters / total - detractors / total) * 100)
     comments = sum(1 for r in combined if r['Response'].strip())
 
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"  Responses: {total}")
     print(f"  NPS Score: {nps}")
     print(f"  Promoters: {promoters} ({round(promoters/total*100, 1)}%)")
@@ -347,7 +347,7 @@ def main():
     print(f"  Date range: {combined[0]['Date']} to {combined[-1]['Date']}")
 
     # Score distribution
-    print(f"\n  Score distribution:")
+    print("\n  Score distribution:")
     for s in range(0, 11):
         count = sum(1 for r in scores_list if r == s)
         if count > 0:

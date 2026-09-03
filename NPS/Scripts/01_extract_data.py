@@ -66,7 +66,7 @@ def main():
         year, month = map(int, target_month.split('-'))
         if not (1 <= month <= 12):
             raise ValueError("Month must be between 01 and 12")
-    except (ValueError, AttributeError) as e:
+    except (ValueError, AttributeError):
         print(f"❌ Error: Invalid month format '{target_month}'. Use YYYY-MM (e.g., 2025-11)")
         sys.exit(1)
 
@@ -86,13 +86,13 @@ def main():
     staging_csv = find_staging_csv(staging_dir)
 
     if staging_csv is None:
-        print(f"❌ Error: No CSV files found in staging directory")
+        print("❌ Error: No CSV files found in staging directory")
         sys.exit(1)
 
     print(f"✓ Found: {staging_csv.name}")
 
     # Read and validate CSV
-    print(f"\n📊 Reading CSV...")
+    print("\n📊 Reading CSV...")
     try:
         rows, columns = read_pendo_csv(staging_csv)
         print(f"✓ Loaded {len(rows)} rows, {len(columns)} columns")
@@ -108,7 +108,7 @@ def main():
         print(f"✓ {message}")
     else:
         print(f"⚠️  Warning: {message}")
-        print(f"\nContinuing with extraction, but data may be incomplete.")
+        print("\nContinuing with extraction, but data may be incomplete.")
         if not args.yes:
             response = input("Continue? (y/n): ")
             if response.lower() != 'y':
@@ -124,7 +124,7 @@ def main():
 
         # Check if output file already exists
         if output_file.exists():
-            print(f"⚠️  Warning: Output file already exists")
+            print("⚠️  Warning: Output file already exists")
             if not args.yes:
                 response = input("Overwrite? (y/n): ")
                 if response.lower() != 'y':
@@ -143,7 +143,7 @@ def main():
         sys.exit(1)
 
     # Delete staging file
-    print(f"\n🗑️  Deleting staging file...")
+    print("\n🗑️  Deleting staging file...")
     try:
         staging_csv.unlink()
         print(f"✓ Deleted: {staging_csv.name}")
@@ -152,16 +152,16 @@ def main():
         print(f"   Please manually delete: {staging_csv}")
 
     # Success summary
-    print(f"\n" + "="*60)
-    print(f"✅ SUCCESS")
-    print(f"="*60)
+    print("\n" + "="*60)
+    print("✅ SUCCESS")
+    print("="*60)
     print(f"Month: {target_month}")
     print(f"Output: {output_file}")
     print(f"Rows: {len(extracted_rows)}")
 
     if not is_complete:
-        print(f"\n⚠️  Note: Data validation showed potential incompleteness")
-        print(f"   Review extraction carefully")
+        print("\n⚠️  Note: Data validation showed potential incompleteness")
+        print("   Review extraction carefully")
 
     print(f"\nNext step: Run 02_update_tracking.py --month {target_month} --product {product}")
 
