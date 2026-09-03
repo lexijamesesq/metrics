@@ -8,6 +8,39 @@ jira-config.md
 XPL/
 .claude/skills/xpl/
 
+# === Created content (data, analysis, tracking) ===
+NPS/Data/
+NPS/Analysis/
+NPS/Tracking/
+Usage/Tracking/
+Usage/Data/
+UX Bugs/Data/
+UX Bugs/Tracking/
+
+# === Knowledge layer (agent-maintained reference docs) ===
+Knowledge/
+
+# === Personal/org-specific documents ===
+backlog.json
+AG Design Metrics.xlsx
+
+# === Infrastructure (org-specific) ===
+Infrastructure/sheets-api-config.md
+Infrastructure/snowflake-data-sources.md
+Infrastructure/research-output-integration-overview.md
+
+# === Process/research docs with org-specific content ===
+NPS/Process/nps-monthly-analysis-workflow.md
+NPS/portability-notes.md
+Context/
+Usage/Process/mcp-collection-guide.md
+Usage/Process/snowflake-yoy-data-sources.md
+
+# === Directories with only org-specific content ===
+Experiments/
+InstUI/
+DesignSystem/
+
 # === Local infrastructure ===
 .github-prep-status.json
 .DS_Store
