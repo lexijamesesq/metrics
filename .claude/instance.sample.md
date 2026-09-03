@@ -1,12 +1,3 @@
----
-tags:
-  - type/claude-project
-  - project/metrics
-status: active
-description: >-
-  Design metrics framework tracking NPS, UX bugs, usage, experimentation, and
-  design system adoption for [YOUR_ORG/PRODUCT_AREA].
----
 # Design Metrics Framework — [YOUR_PRODUCT_AREA]
 
 Copy to `.claude/instance.md` and fill in your values — gitignored, one per fork. This is instance/state scaffolding for your own metrics setup, separate from the repo's own `CLAUDE.md` (which orients a session working on the skills themselves).
@@ -31,6 +22,23 @@ Copy to `.claude/instance.md` and fill in your values — gitignored, one per fo
 
 ### Blocked / Pending
 - TODO
+
+---
+
+## Knowledge Sources & Prioritization
+
+Two fork-local folders (gitignored — see this repo's `.gitignore`) hold your own synthesis, not the operator's:
+
+- **`Knowledge/`** — durable reference docs (methodology notes, framework decisions, per-product quirks). When a session produces synthesis worth keeping, file it here rather than leaving it in chat history.
+- **`Context/`** — per-backlog-item scratch only, not persistent knowledge. Empty at steady state.
+
+### Writing posture
+
+These docs exist for me to load context efficiently across sessions; you are a secondary reader. Terse and dense over polished prose, tables over paragraphs, no hesitation to prune.
+
+### Reading posture
+
+When I load a `Knowledge/` page, I check its `updated` frontmatter. Older than 90 days: surface the staleness before relying on the content — validate against live data sources (Pendo, Jira) and bump `updated` if still accurate, or edit/delete if not.
 
 ---
 
