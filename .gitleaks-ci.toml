@@ -7,13 +7,13 @@
 # rules keep gating every local commit/push through the unchanged
 # .gitleaks.toml the pre-commit hooks (gitleaks-staged/-pre-push/-commit-msg)
 # still use. Same shape as hazel's, dotty-private's, and home-assistant-tools'
-# .gitleaks-ci.toml (LEX-675, LEX-679, LEX-680).
+# .gitleaks-ci.toml.
 
 title = "Metrics gitleaks config (CI — base rules only)"
 
 # A config file with no [[rules]] and no [extend] loads ZERO rules — it does
-# NOT fall back to gitleaks' embedded defaults on its own (verified in
-# hazel's CI, LEX-675, against a real deliberately-secret-bearing PR).
+# NOT fall back to gitleaks' embedded defaults on its own (verified against a
+# real deliberately-secret-bearing PR).
 # useDefault = true is the documented way to inherit gitleaks' built-in
 # ruleset while still layering this file's own [allowlist] on top of it.
 [extend]
