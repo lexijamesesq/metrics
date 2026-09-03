@@ -19,7 +19,6 @@ import argparse
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
 
 # Add lib to path
 sys.path.insert(0, str(Path(__file__).parent / 'lib'))
@@ -53,12 +52,11 @@ def main():
     # Setup paths
     base_dir = Path(__file__).parent.parent
     nps_csv = base_dir / 'Data' / product_folder / f'nps-{target_month}.csv'
-    score_tracking_csv = base_dir / 'Data' / product_folder / f'{product}-nps-score-tracking.csv'
 
     # Validate input file exists
     if not nps_csv.exists():
         print(f"❌ Error: NPS CSV not found: {nps_csv}")
-        print(f"\nRun 01_extract_data.py first:")
+        print("\nRun 01_extract_data.py first:")
         print(f"   python 01_extract_data.py --month {target_month} --product {product}")
         sys.exit(1)
 
@@ -90,12 +88,12 @@ def main():
             comment_count += 1
 
     if not ratings:
-        print(f"⚠️  Warning: No ratings found in CSV")
-        print(f"   Expected column: 'Rating', 'Score', or 'NPS Score'")
+        print("⚠️  Warning: No ratings found in CSV")
+        print("   Expected column: 'Rating', 'Score', or 'NPS Score'")
         sys.exit(1)
 
     # Calculate NPS metrics
-    print(f"\n📈 Calculating NPS metrics...")
+    print("\n📈 Calculating NPS metrics...")
     nps_score, breakdown = calculate_nps_score(ratings)
 
     print(f"\nNPS Score: {nps_score}")
@@ -106,16 +104,16 @@ def main():
     print(f"  Comments: {comment_count} ({round((comment_count / breakdown['total_responses']) * 100, 1)}%)")
 
     # Success summary
-    print(f"\n" + "="*60)
-    print(f"✅ SUCCESS")
-    print(f"="*60)
+    print("\n" + "="*60)
+    print("✅ SUCCESS")
+    print("="*60)
     print(f"Month: {month_display}")
     print(f"NPS Score: {nps_score}")
     print(f"Responses: {breakdown['total_responses']}")
 
-    print(f"\nNext steps:")
-    print(f"  1. Validate feature watch lists (Step 4a)")
-    print(f"  2. Generate analysis with Claude Code (Step 6)")
+    print("\nNext steps:")
+    print("  1. Validate feature watch lists (Step 4a)")
+    print("  2. Generate analysis with Claude Code (Step 6)")
 
 
 if __name__ == '__main__':
