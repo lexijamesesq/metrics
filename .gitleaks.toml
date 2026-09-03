@@ -10,8 +10,6 @@ path = ".gitleaks-operator-rules.toml"
 [allowlist]
 paths = [
   '''\.gitleaks\.toml$''',
-  '''CLAUDE\.md$''',
-  '''CLAUDE\.sample\.md$''',
-  '''\.claude/rules/''',
+  '''instance\.sample\.md$''',
   '''LICENSE$''',
 ]

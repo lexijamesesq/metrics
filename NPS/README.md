@@ -33,7 +33,7 @@ This skill reads three config sources at Step 0:
 |--------|----------------|
 | `pendo-config.md` | `subscription_id`, product entry with `guide_id`, `numeric_poll_id`, `text_poll_id`, `surface_filter` |
 | `jira-config.md` | `cloud_id`, JPD `project_key`, `surface_area` and `target_quarter` field IDs (optional -- watch list is non-blocking) |
-| `CLAUDE.md` | `onepassword.pendo_api_key`, `spreadsheet_url` |
+| `.claude/instance.md` | `onepassword.pendo_api_key`, `spreadsheet_url` |
 
 ## Scripts
 
@@ -49,4 +49,4 @@ This skill reads three config sources at Step 0:
 - Pendo MCP server configured in Claude Code
 - 1Password CLI installed and authenticated (`op signin`)
 - Atlassian MCP server (optional -- for JPD feature watch list)
-- `pendo-config.md` and `CLAUDE.md` populated
+- `pendo-config.md` and `.claude/instance.md` populated

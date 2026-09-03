@@ -11,7 +11,7 @@ mv claude .claude
 Copy the sample configs and fill in your values:
 
 ```
-cp CLAUDE.sample.md CLAUDE.md
+cp .claude/instance.sample.md .claude/instance.md
 cp pendo-config.sample.md pendo-config.md
 cp jira-config.sample.md jira-config.md
 ```
@@ -20,9 +20,9 @@ cp jira-config.sample.md jira-config.md
 
 | Field | Location | What to set |
 |-------|----------|-------------|
-| `onepassword.pendo_api_key` | `CLAUDE.md` | 1Password item path for your Pendo REST API key |
-| `spreadsheet_url` | `CLAUDE.md` | Google Sheets URL for your metrics spreadsheet |
-| `sheets_config` | `CLAUDE.md` | Path to your deployed Apps Script web app URL file |
+| `onepassword.pendo_api_key` | `.claude/instance.md` | 1Password item path for your Pendo REST API key |
+| `spreadsheet_url` | `.claude/instance.md` | Google Sheets URL for your metrics spreadsheet |
+| `sheets_config` | `.claude/instance.md` | Path to your deployed Apps Script web app URL file |
 | `subscription_id` | `pendo-config.md` | Your Pendo subscription ID |
 | NPS product entries | `pendo-config.md` | Guide IDs, poll IDs, and surface filters per product |
 | Usage app entries | `pendo-config.md` | App IDs, entity types, segment IDs, and page IDs |
@@ -65,11 +65,11 @@ cp jira-config.sample.md jira-config.md
 
 Skills read configuration at runtime from three sources:
 
-**You configure:** `CLAUDE.md` (project-level settings like 1Password path and Sheets URL), `pendo-config.md` (all Pendo IDs -- subscriptions, guides, polls, segments, pages), and `jira-config.md` (Atlassian connection, project keys, custom fields, TTR windows).
+**You configure:** `.claude/instance.md` (project-level settings like 1Password path and Sheets URL), `pendo-config.md` (all Pendo IDs -- subscriptions, guides, polls, segments, pages), and `jira-config.md` (Atlassian connection, project keys, custom fields, TTR windows).
 
 **Skills handle:** Reading the config files at Step 0, validating that required values exist, stopping with setup instructions if a config file is missing, and referencing values by name throughout execution.
 
-See `CLAUDE.sample.md`, `pendo-config.sample.md`, and `jira-config.sample.md` for the complete configuration surface with documentation for every field.
+See `.claude/instance.sample.md`, `pendo-config.sample.md`, and `jira-config.sample.md` for the complete configuration surface with documentation for every field.
 
 ## Usage
 
@@ -107,7 +107,7 @@ Three skills collect metrics from two external platforms (Pendo and Jira) and wr
 
 The data architecture has three layers. Individual structured notes in `{Metric}/Tracking/` are the source of truth, with YAML frontmatter matching the Google Sheet schema. Google Sheets is a derived output pushed automatically by each skill at the end of a run (non-blocking -- local notes are written regardless). NPS analysis documents are monthly markdown files with qualitative theme analysis, evidence-based insights, and forward-looking signals.
 
-Each skill reads its configuration at Step 0 from markdown config files at the project root. Pendo skills read `pendo-config.md`; Jira skills read `jira-config.md`; both check `CLAUDE.md` for project-level settings. If a config file is missing, the skill stops with setup instructions rather than failing silently.
+Each skill reads its configuration at Step 0 from markdown config files at the project root. Pendo skills read `pendo-config.md`; Jira skills read `jira-config.md`; both check `.claude/instance.md` for project-level settings. If a config file is missing, the skill stops with setup instructions rather than failing silently.
 
 The Python scripts handle data fetching (REST API) and calculation (NPS metrics, quarterly bug aggregation). Skills invoke them with config values passed as CLI arguments, so the scripts work standalone or as part of the skill pipeline.
 

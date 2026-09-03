@@ -104,9 +104,9 @@ Extract the following values:
 - `JPD_SURFACE_AREA_FIELD` ← `surface_area`
 - `JPD_TARGET_QUARTER_FIELD` ← `target_quarter`
 
-### CLAUDE.md config
+### .claude/instance.md config
 
-Read the `## Configuration` section of `CLAUDE.md` from the project root. Extract:
+Read the `## Configuration` section of `.claude/instance.md` from the project root. Extract:
 
 - `ONEPASSWORD_ITEM` ← `onepassword.pendo_api_key` (1Password item path, e.g., `op://VaultName/ItemName/credential`)
 - `SHEETS_URL` ← `spreadsheet_url` (Google Sheets URL for analysis document links)
@@ -134,7 +134,7 @@ See `pendo-config.md` for Pendo connection details, guide IDs, and poll IDs.
 
 See `jira-config.md` for Atlassian connection details and JPD field IDs.
 
-See CLAUDE.md Configuration section for 1Password item path and Google Sheets URL.
+See .claude/instance.md Configuration section for 1Password item path and Google Sheets URL.
 
 ---
 
