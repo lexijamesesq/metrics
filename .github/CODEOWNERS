@@ -1,10 +1,35 @@
-# Default: every path waits for the operator's review.
-* @lexijamesesq
-# Unattended paths: a pattern with no owner clears ownership for it.
+# CODEOWNERS — coverage model (un-inverted).
+#
+# DEFAULT = UNOWNED: any path not matched below needs no code-owner review, so a
+# low-risk deterministic PR (and a Margot LOW-risk verdict) can merge without the
+# operator. There is deliberately NO `* @owner` catch-all — metrics is a data
+# repo, so its data trees (Infrastructure/, NPS/, UX Bugs/, Usage/) and its
+# skills/docs flow unattended.
+#
+# OWNED (listed below) = the safety / identity / gate machinery: a judgment change
+# there must have a human. The branch ruleset requires code-owner review (with 0
+# baseline approvals), so touching an owned path holds the PR for @lexijamesesq;
+# touching only unowned paths does not.
+#
+# When adding a path: uncertain -> OWNED (under-coverage — an owned path left
+# unowned — is the dangerous direction). Anchored patterns (/path/ or /file) over
+# bare names.
 
-/README.md
-/LICENSE
-/Infrastructure/**/*.md
-/NPS/**/*.md
-/UX\ Bugs/**/*.md
-/Usage/**/*.md
+# --- Gate machinery (CI/gate/hook chain and its config) ---
+/.github/workflows/            @lexijamesesq
+/.pre-commit-config.yaml       @lexijamesesq
+
+# --- Gate/lint configs that can DISABLE a check (gate self-protection) ---
+/.gitleaks.toml                @lexijamesesq
+/.gitleaks-ci.toml             @lexijamesesq
+
+# --- Governance, policy & identity ---
+/.claude/settings.json         @lexijamesesq
+/.github/CODEOWNERS            @lexijamesesq
+
+# --- Build / dependency config (supply-chain surface) ---
+/pyproject.toml                @lexijamesesq
+
+# UNOWNED by default (flow without the operator): README.md, LICENSE, CLAUDE.md,
+# the data trees (Infrastructure/, NPS/, UX Bugs/, Usage/), .claude/skills/, the
+# *.sample.md config templates, .gitignore.
