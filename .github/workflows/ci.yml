@@ -66,7 +66,7 @@ jobs:
       # defaults. Pinned to dotty's merge SHA, only reachable once it's on
       # dotty main.
       - name: Setup gitleaks
-        uses: lexijamesesq/dotty/.github/actions/setup-gitleaks@004bea3125b420fac9917e4e1cfdd1d40baffcab # v2026.09.25-6
+        uses: lexijamesesq/dotty/.github/actions/setup-gitleaks@v1
         with:
           version: '8.30.1'
       - name: gitleaks scan (base rules only, PR range, redacted)
