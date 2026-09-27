@@ -13,25 +13,49 @@ permissions:
   contents: read
 
 jobs:
-  universal-ci:
+  floor:
+    # Read scopes the floor uses with github.token (Jev's triage answer on the
+    # head's check-runs). A called workflow gets no more than this; on a
+    # private repo the triage read 403s without it and the PR runs the full
+    # suite. No write scope, no secret: this is the lane a PR controls.
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
     uses: lexijamesesq/dotty/.github/workflows/estate-ci.yml@v1
     with:
       dotty_ref: v1
 
   all-checks-passed:
-    needs: [universal-ci, ruff, shellcheck, gitleaks]
+    needs: [floor, ruff, shellcheck, gitleaks]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Require every dependency to have succeeded
+      - name: Require every dependency to have succeeded (a job skipped on a mechanical PR is satisfied)
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          MECHANICAL: ${{ needs.floor.outputs.mechanical }}
+          EVENT: ${{ github.event_name }}
         run: |
-          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}" == "true" ]]; then
-            echo "one or more required jobs failed"
+          set -euo pipefail
+          # A skipped job is satisfied on a mechanical PR (the floor skipped
+          # it) and on any non-PR event (a push to the default branch, where
+          # any job skipped by its own `if:` is not a PR's failure); on a
+          # functional PR a skipped job is a failure.
+          bad="$(jq -r --arg mech "$MECHANICAL" --arg event "$EVENT" '
+            to_entries[]
+            | select(.value.result == "failure" or .value.result == "cancelled"
+                     or (.value.result == "skipped" and $mech != "true" and $event == "pull_request"))
+            | .key' <<<"$RESULTS")"
+          if [[ -n "$bad" ]]; then
+            echo "required job(s) not satisfied: $bad"
             exit 1
           fi
-          echo "all checks passed"
+          echo "all checks passed (event=${EVENT} mechanical=${MECHANICAL:-false})"
 
   ruff:
+    needs: [floor]
+    if: ${{ needs.floor.outputs.mechanical != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -42,6 +66,8 @@ jobs:
         run: uvx ruff@0.16.5 check --force-exclude .
 
   shellcheck:
+    needs: [floor]
+    if: ${{ needs.floor.outputs.mechanical != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -52,6 +78,8 @@ jobs:
           ignore_paths: .git
 
   gitleaks:
+    needs: [floor]
+    if: ${{ needs.floor.outputs.mechanical != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
