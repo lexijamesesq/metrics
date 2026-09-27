@@ -14,6 +14,9 @@ permissions:
 
 jobs:
   floor:
+    # The required check is `ci / checks`: this job's name, then the called
+    # job's (estate-ci.yml's check_name). Convention `<lane> / <what it checks>`.
+    name: ci
     # Read scopes the floor uses with github.token (Jev's triage answer on the
     # head's check-runs). A called workflow gets no more than this; on a
     # private repo the triage read 403s without it and the PR runs the full
@@ -25,8 +28,10 @@ jobs:
     uses: lexijamesesq/dotty/.github/workflows/estate-ci.yml@v1
     with:
       dotty_ref: v1
+      check_name: checks
 
   all-checks-passed:
+    name: ci / all-passed
     needs: [floor, ruff, shellcheck]
     if: always()
     runs-on: ubuntu-latest
@@ -54,6 +59,7 @@ jobs:
           echo "all checks passed (event=${EVENT} mechanical=${MECHANICAL:-false})"
 
   ruff:
+    name: ci / ruff
     needs: [floor]
     if: ${{ needs.floor.outputs.mechanical != 'true' }}
     runs-on: ubuntu-latest
@@ -66,6 +72,7 @@ jobs:
         run: uvx ruff@0.16.5 check --force-exclude .
 
   shellcheck:
+    name: ci / shellcheck
     needs: [floor]
     if: ${{ needs.floor.outputs.mechanical != 'true' }}
     runs-on: ubuntu-latest
