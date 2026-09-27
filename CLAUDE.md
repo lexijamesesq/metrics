@@ -13,7 +13,7 @@ Three Claude Code skills (`/nps`, `/usage`, `/ux-bugs`) that collect design metr
 
 Clone the repo. `.claude/` ships tracked and committed — review its contents (see Security below) before opening the directory in Claude Code. Copy the instance config sample and fill in your own values:
 
-```
+```bash
 cp .claude/instance.sample.md .claude/instance.md
 cp pendo-config.sample.md pendo-config.md
 cp jira-config.sample.md jira-config.md
@@ -37,20 +37,20 @@ pre-commit run --all-files  # gitleaks-staged + the standard hook set
 
 ## CI
 
-`.github/workflows/ci.yml`, required via the "Protect main" ruleset: `ruff` (Python lint), `shellcheck` (`ludeeus/action-shellcheck`, no-op today — no `.sh` files yet, kept for when scripts are added), and `gitleaks` (full outgoing PR-range scan via dotty's shared `setup-gitleaks` composite action, base rules only + `--redact` — public repo, the operator's PII ruleset never reaches CI). All three required to merge.
+`.github/workflows/ci.yml`, required via the "Protect main" ruleset through `all-checks-passed`: the estate's shared `floor` job, plus this repo's own `ruff` (Python lint) and `shellcheck` (`ludeeus/action-shellcheck`, no-op today — no `.sh` files yet, kept for when scripts are added). PR-time secret scanning is the trusted lane's `trusted-scan` (`gate.yml`), a separate required check.
 
 ## Conventions
 
 - Skills are self-contained SKILL.md files under `.claude/skills/{name}/` — no shared runtime beyond the Configuration keys above and the `pendo-config.md`/`jira-config.md` product data.
 - Instance-specific values are always config keys, never hardcoded — a skill that hardcodes an ID/URL breaks for every other fork.
 - Python scripts are stdlib-first (`fetch-nps-responses.py` uses only stdlib + 1Password CLI for the API key) so they run standalone or as part of a skill pipeline with no dependency install step.
-- Commits: gitleaks-staged/-pre-push/-commit-msg (dotty's exported hooks) gate every commit and push locally; CI re-proves the outgoing PR range independently.
+- Commits: gitleaks-staged/-pre-push/-commit-msg (dotty's exported hooks) gate every commit and push locally; `trusted-scan` re-scans the PR's commits, branch, title and body at PR time.
 - `.claude/skills/xpl/` — if present locally, it never enters git. It's the operator's own financial/renewal-pipeline slide-prep skill, gitignored (`.claude/skills/xpl/` in `.gitignore`), colocated here only so it loads in the same session as the other skills.
 
 ## Key Files
 
 | File | Purpose |
-|------|---------|
+| ---- | ------- |
 | `.claude/instance.sample.md` | Configuration contract template — copy to `.claude/instance.md` and fill in your instance's values |
 | `.claude/skills/nps/` | `/nps` — monthly NPS analysis: REST API fetch, qualitative theme analysis, structured output |
 | `.claude/skills/usage/` | `/usage` — monthly DAU/MAU collection for configured products via Pendo MCP |
