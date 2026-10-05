@@ -17,15 +17,8 @@ repos:
       - id: house-scaffold-sample-shape
       - id: house-scaffold-sample-placeholder
       - id: vale-self-narration
-
-  - repo: local
-    hooks:
       - id: check-file-presence
-        name: check required files exist (README, LICENSE)
-        entry: bash -c 'missing=""; [ ! -f README.md ] && missing="$missing README.md"; [ ! -f LICENSE ] && missing="$missing LICENSE"; [ -n "$missing" ] && echo "Missing required files:$missing" && exit 1; exit 0'
-        language: system
-        pass_filenames: false
-        always_run: true
+        args: [README.md, LICENSE]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
