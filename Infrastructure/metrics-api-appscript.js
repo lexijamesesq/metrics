@@ -25,32 +25,55 @@ const SHEET_ID = null;
 
 const CONFIG = {
   nps: {
-    tabName: 'NPS_Data',
+    tabName: "NPS_Data",
     columns: [
-      'Product', 'Month', 'Score', 'Responses',
-      'Promoter_Pct', 'Passive_Pct', 'Detractor_Pct',
-      'MoM_Change_Pct', 'Interpretation',
-      'Link_Analysis', 'Link_Pendo'
+      "Product",
+      "Month",
+      "Score",
+      "Responses",
+      "Promoter_Pct",
+      "Passive_Pct",
+      "Detractor_Pct",
+      "MoM_Change_Pct",
+      "Interpretation",
+      "Link_Analysis",
+      "Link_Pendo",
     ],
-    keyFields: ['Product', 'Month']
+    keyFields: ["Product", "Month"],
   },
   usage: {
-    tabName: 'Usage_Data',
+    tabName: "Usage_Data",
     columns: [
-      'Product', 'Month', 'Total_MAU', 'Teacher_MAU',
-      'Student_MAU', 'Avg_DAU', 'Peak_DAU',
-      'DAU_MAU_Ratio', 'MoM_Change_Pct', 'YoY_Change_Pct'
+      "Product",
+      "Month",
+      "Total_MAU",
+      "Teacher_MAU",
+      "Student_MAU",
+      "Avg_DAU",
+      "Peak_DAU",
+      "DAU_MAU_Ratio",
+      "MoM_Change_Pct",
+      "YoY_Change_Pct",
     ],
-    keyFields: ['Product', 'Month']
+    keyFields: ["Product", "Month"],
   },
   ux_bugs: {
-    tabName: 'UXBugs_Data',
+    tabName: "UXBugs_Data",
     columns: [
-      'Quarter', 'Project', 'Total_Created', 'P1', 'P2', 'P3', 'P4',
-      'Total_Resolved', '%_Remediated', '%_Outside_TTR', 'Date'
+      "Quarter",
+      "Project",
+      "Total_Created",
+      "P1",
+      "P2",
+      "P3",
+      "P4",
+      "Total_Resolved",
+      "%_Remediated",
+      "%_Outside_TTR",
+      "Date",
     ],
-    keyFields: ['Quarter', 'Project']
-  }
+    keyFields: ["Quarter", "Project"],
+  },
 };
 
 // ─── Entry Point ────────────────────────────────────────────────────────────
@@ -73,8 +96,8 @@ function doPost(e) {
     // Validate metric_type
     if (!metricType || !CONFIG[metricType]) {
       return jsonResponse(400, {
-        error: 'Invalid or missing metric_type',
-        valid_types: Object.keys(CONFIG)
+        error: "Invalid or missing metric_type",
+        valid_types: Object.keys(CONFIG),
       });
     }
 
@@ -86,17 +109,17 @@ function doPost(e) {
     // Normalize to array for uniform handling
     const rows = Array.isArray(data) ? data : [data];
     if (rows.length === 0) {
-      return jsonResponse(400, { error: 'Empty data array' });
+      return jsonResponse(400, { error: "Empty data array" });
     }
 
     // Validate required key fields exist in each row
     const config = CONFIG[metricType];
     for (let i = 0; i < rows.length; i++) {
       for (const key of config.keyFields) {
-        if (rows[i][key] === undefined || rows[i][key] === null || rows[i][key] === '') {
+        if (rows[i][key] === undefined || rows[i][key] === null || rows[i][key] === "") {
           return jsonResponse(400, {
             error: `Row ${i}: missing required key field "${key}"`,
-            required_keys: config.keyFields
+            required_keys: config.keyFields,
           });
         }
       }
@@ -105,7 +128,7 @@ function doPost(e) {
     // Acquire lock to prevent concurrent write collisions
     const lock = LockService.getScriptLock();
     if (!lock.tryLock(30000)) {
-      return jsonResponse(503, { error: 'Server busy, try again in a few seconds' });
+      return jsonResponse(503, { error: "Server busy, try again in a few seconds" });
     }
 
     try {
@@ -115,11 +138,10 @@ function doPost(e) {
     } finally {
       lock.releaseLock();
     }
-
   } catch (err) {
     return jsonResponse(500, {
-      error: 'Internal error',
-      message: err.message
+      error: "Internal error",
+      message: err.message,
     });
   }
 }
@@ -146,7 +168,7 @@ function upsertRows(metricType, rows) {
   const lastCol = config.columns.length;
 
   // Build index of key columns (0-based positions in our column config)
-  const keyIndices = config.keyFields.map(k => config.columns.indexOf(k));
+  const keyIndices = config.keyFields.map((k) => config.columns.indexOf(k));
 
   // Read existing sheet data to find matches
   let existingData = [];
@@ -163,18 +185,18 @@ function upsertRows(metricType, rows) {
     const processedRow = Object.assign({}, row);
     for (const col of config.columns) {
       const val = processedRow[col];
-      if (typeof val === 'string' && /^\d{4}-\d{2}$/.test(val.trim())) {
+      if (typeof val === "string" && /^\d{4}-\d{2}$/.test(val.trim())) {
         processedRow[col] = toMDYYYY(val.trim());
       }
     }
 
     // Build the key for this incoming row
-    const incomingKey = config.keyFields.map(k => normalizeValue(processedRow[k])).join('||');
+    const incomingKey = config.keyFields.map((k) => normalizeValue(processedRow[k])).join("||");
 
     // Search existing data for a match
     let matchRowIndex = -1;
     for (let i = 0; i < existingData.length; i++) {
-      const existingKey = keyIndices.map(idx => normalizeValue(existingData[i][idx])).join('||');
+      const existingKey = keyIndices.map((idx) => normalizeValue(existingData[i][idx])).join("||");
       if (existingKey === incomingKey) {
         matchRowIndex = i;
         break;
@@ -197,22 +219,24 @@ function upsertRows(metricType, rows) {
       const sheetRow = matchRowIndex + 2;
       sheet.getRange(sheetRow, 1, 1, lastCol).setValues([rowValues]);
       updated++;
-      details.push({ action: 'updated', key: incomingKey, sheet_row: sheetRow });
+      details.push({ action: "updated", key: incomingKey, sheet_row: sheetRow });
     } else {
       // INSERT new row, copy full format from row above (includes borders + banding)
-      const rowValues = config.columns.map(col => {
+      const rowValues = config.columns.map((col) => {
         const val = processedRow[col];
-        return val !== undefined ? val : '';
+        return val !== undefined ? val : "";
       });
       const newRow = sheet.getLastRow() + 1;
       sheet.insertRowAfter(sheet.getLastRow());
-      sheet.getRange(newRow - 1, 1, 1, lastCol).copyFormatToRange(sheet, 1, lastCol, newRow, newRow);
+      sheet
+        .getRange(newRow - 1, 1, 1, lastCol)
+        .copyFormatToRange(sheet, 1, lastCol, newRow, newRow);
       sheet.getRange(newRow, 1, 1, lastCol).setValues([rowValues]);
       inserted++;
       // Also add to our in-memory data so subsequent rows in the same batch
       // can detect duplicates against this newly appended row
       existingData.push(rowValues);
-      details.push({ action: 'inserted', key: incomingKey });
+      details.push({ action: "inserted", key: incomingKey });
     }
   }
 
@@ -222,7 +246,7 @@ function upsertRows(metricType, rows) {
     processed: rows.length,
     inserted: inserted,
     updated: updated,
-    details: details
+    details: details,
   };
 }
 
@@ -233,8 +257,8 @@ function upsertRows(metricType, rows) {
  * Sheets parses this as a date and applies the column's custom format (MMMM yyyy).
  */
 function toMDYYYY(yyyyMM) {
-  const parts = yyyyMM.split('-');
-  return parseInt(parts[1]) + '/1/' + parts[0];
+  const parts = yyyyMM.split("-");
+  return parseInt(parts[1]) + "/1/" + parts[0];
 }
 
 /**
@@ -244,13 +268,13 @@ function toMDYYYY(yyyyMM) {
  */
 function normalizeValue(val) {
   if (val instanceof Date) {
-    return Utilities.formatDate(val, 'UTC', 'yyyy-MM');
+    return Utilities.formatDate(val, "UTC", "yyyy-MM");
   }
-  if (typeof val === 'string') {
+  if (typeof val === "string") {
     // Normalize M/D/YYYY to YYYY-MM for comparison against existing date cells
     const mdyyyy = val.trim().match(/^(\d{1,2})\/1\/(\d{4})$/);
     if (mdyyyy) {
-      return mdyyyy[2] + '-' + mdyyyy[1].padStart(2, '0');
+      return mdyyyy[2] + "-" + mdyyyy[1].padStart(2, "0");
     }
     return val.trim().toLowerCase();
   }
@@ -266,11 +290,11 @@ function jsonResponse(statusCode, body) {
   const output = {
     status: statusCode,
     ...body,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
-  return ContentService
-    .createTextOutput(JSON.stringify(output))
-    .setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify(output)).setMimeType(
+    ContentService.MimeType.JSON,
+  );
 }
 
 // ─── Utility: Test Functions ─────────────────────────────────────────────────
@@ -283,22 +307,22 @@ function testDoPost() {
   const mockEvent = {
     postData: {
       contents: JSON.stringify({
-        metric_type: 'nps',
+        metric_type: "nps",
         data: {
-          Product: 'Product A',
-          Month: '1900-01',
+          Product: "Product A",
+          Month: "1900-01",
           Score: -34,
           Responses: 108,
           Promoter_Pct: 0.19,
           Passive_Pct: 0.29,
           Detractor_Pct: 0.53,
           MoM_Change_Pct: 0,
-          Interpretation: 'Test row — safe to delete',
-          Link_Analysis: 'https://example.com/analysis',
-          Link_Pendo: 'https://example.com/pendo'
-        }
-      })
-    }
+          Interpretation: "Test row — safe to delete",
+          Link_Analysis: "https://example.com/analysis",
+          Link_Pendo: "https://example.com/pendo",
+        },
+      }),
+    },
   };
 
   const result = doPost(mockEvent);
@@ -312,22 +336,22 @@ function testUXBugs() {
   const mockEvent = {
     postData: {
       contents: JSON.stringify({
-        metric_type: 'ux_bugs',
+        metric_type: "ux_bugs",
         data: {
-          Quarter: 'Q1 1900',
-          Project: 'PROJ',
+          Quarter: "Q1 1900",
+          Project: "PROJ",
           Total_Created: 5,
           P1: 0,
           P2: 1,
           P3: 4,
           P4: 0,
           Total_Resolved: 3,
-          '%_Remediated': 0.6,
-          '%_Outside_TTR': 0,
-          Date: '3/5/2026'
-        }
-      })
-    }
+          "%_Remediated": 0.6,
+          "%_Outside_TTR": 0,
+          Date: "3/5/2026",
+        },
+      }),
+    },
   };
 
   const result = doPost(mockEvent);
@@ -341,11 +365,11 @@ function testBatchUsage() {
   const mockEvent = {
     postData: {
       contents: JSON.stringify({
-        metric_type: 'usage',
+        metric_type: "usage",
         data: [
           {
-            Product: 'Product A',
-            Month: '1900-01',
+            Product: "Product A",
+            Month: "1900-01",
             Total_MAU: 145000,
             Teacher_MAU: 28000,
             Student_MAU: 117000,
@@ -353,11 +377,11 @@ function testBatchUsage() {
             Peak_DAU: 58000,
             DAU_MAU_Ratio: 0.29,
             MoM_Change_Pct: 0.021,
-            YoY_Change_Pct: 0.15
+            YoY_Change_Pct: 0.15,
           },
           {
-            Product: 'Product B',
-            Month: '1900-01',
+            Product: "Product B",
+            Month: "1900-01",
             Total_MAU: 890000,
             Teacher_MAU: 95000,
             Student_MAU: 795000,
@@ -365,11 +389,11 @@ function testBatchUsage() {
             Peak_DAU: 420000,
             DAU_MAU_Ratio: 0.35,
             MoM_Change_Pct: -0.013,
-            YoY_Change_Pct: 0.25
-          }
-        ]
-      })
-    }
+            YoY_Change_Pct: 0.25,
+          },
+        ],
+      }),
+    },
   };
 
   const result = doPost(mockEvent);
@@ -387,35 +411,35 @@ function testBatchUsage() {
  * Run from the Apps Script editor after deploying. Check the Execution log.
  */
 function testMergeOnUpdate() {
-  var testProduct = 'MergeTest';
-  var testMonth = '1900-01';
+  var testProduct = "MergeTest";
+  var testMonth = "1900-01";
 
   // Step 1: Insert with Link_Analysis
   var insert = doPost({
     postData: {
       contents: JSON.stringify({
-        metric_type: 'nps',
+        metric_type: "nps",
         data: {
           Product: testProduct,
           Month: testMonth,
           Score: -10,
           Responses: 50,
-          Promoter_Pct: 0.20,
-          Passive_Pct: 0.30,
-          Detractor_Pct: 0.50,
+          Promoter_Pct: 0.2,
+          Passive_Pct: 0.3,
+          Detractor_Pct: 0.5,
           MoM_Change_Pct: 0,
-          Interpretation: 'Merge test - safe to delete',
-          Link_Analysis: 'https://example.com/SHOULD-SURVIVE',
-          Link_Pendo: 'https://example.com/pendo'
-        }
-      })
-    }
+          Interpretation: "Merge test - safe to delete",
+          Link_Analysis: "https://example.com/SHOULD-SURVIVE",
+          Link_Pendo: "https://example.com/pendo",
+        },
+      }),
+    },
   });
   var insertResult = JSON.parse(insert.getContent());
-  Logger.log('INSERT: ' + JSON.stringify(insertResult));
+  Logger.log("INSERT: " + JSON.stringify(insertResult));
 
   if (insertResult.status !== 200) {
-    Logger.log('FAIL: insert failed');
+    Logger.log("FAIL: insert failed");
     return;
   }
 
@@ -423,45 +447,47 @@ function testMergeOnUpdate() {
   var update = doPost({
     postData: {
       contents: JSON.stringify({
-        metric_type: 'nps',
+        metric_type: "nps",
         data: {
           Product: testProduct,
           Month: testMonth,
           Score: -5,
           Responses: 55,
           Promoter_Pct: 0.25,
-          Passive_Pct: 0.30,
+          Passive_Pct: 0.3,
           Detractor_Pct: 0.45,
           MoM_Change_Pct: 5,
-          Interpretation: 'Updated without Link_Analysis',
-          Link_Pendo: 'https://example.com/pendo-updated'
-        }
-      })
-    }
+          Interpretation: "Updated without Link_Analysis",
+          Link_Pendo: "https://example.com/pendo-updated",
+        },
+      }),
+    },
   });
   var updateResult = JSON.parse(update.getContent());
-  Logger.log('UPDATE: ' + JSON.stringify(updateResult));
+  Logger.log("UPDATE: " + JSON.stringify(updateResult));
 
   // Step 3: Read back and check
   var ss = SHEET_ID ? SpreadsheetApp.openById(SHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('NPS_Data');
+  var sheet = ss.getSheetByName("NPS_Data");
   var row = updateResult.details[0].sheet_row;
   var cols = CONFIG.nps.columns;
-  var linkIdx = cols.indexOf('Link_Analysis');
+  var linkIdx = cols.indexOf("Link_Analysis");
   var cellValue = sheet.getRange(row, linkIdx + 1).getValue();
 
-  if (cellValue === 'https://example.com/SHOULD-SURVIVE') {
-    Logger.log('PASS: Link_Analysis preserved on update (' + cellValue + ')');
+  if (cellValue === "https://example.com/SHOULD-SURVIVE") {
+    Logger.log("PASS: Link_Analysis preserved on update (" + cellValue + ")");
   } else {
-    Logger.log('FAIL: Link_Analysis was "' + cellValue + '", expected "https://example.com/SHOULD-SURVIVE"');
+    Logger.log(
+      'FAIL: Link_Analysis was "' + cellValue + '", expected "https://example.com/SHOULD-SURVIVE"',
+    );
   }
 
   // Also verify the updated fields took effect
-  var scoreIdx = cols.indexOf('Score');
+  var scoreIdx = cols.indexOf("Score");
   var scoreValue = sheet.getRange(row, scoreIdx + 1).getValue();
-  Logger.log('Score updated to: ' + scoreValue + ' (expected -5)');
+  Logger.log("Score updated to: " + scoreValue + " (expected -5)");
 
   // Step 4: Clean up
   sheet.deleteRow(row);
-  Logger.log('Cleaned up test row ' + row);
+  Logger.log("Cleaned up test row " + row);
 }

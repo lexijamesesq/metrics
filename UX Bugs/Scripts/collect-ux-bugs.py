@@ -71,15 +71,20 @@ def parse_ttr_arg(s):
 def parse_ttr_from_config(path):
     """Parse the '### UX Bugs' subsection under '## TTR Windows'."""
     text = open(path, encoding="utf-8").read()
-    m = re.search(r"^## TTR Windows.*?^### UX Bugs[^\n]*\n(.*?)(?=^###|^## |\Z)",
-                  text, re.M | re.S)
+    m = re.search(
+        r"^## TTR Windows.*?^### UX Bugs[^\n]*\n(.*?)(?=^###|^## |\Z)",
+        text,
+        re.M | re.S,
+    )
     if not m:
         raise ValueError(f"No '## TTR Windows' > '### UX Bugs' section in {path}")
     out = {}
     for pm in re.finditer(r"^-\s*(P\d)\s*:\s*(\d+)", m.group(1), re.M):
         out[pm.group(1)] = int(pm.group(2))
     if not out:
-        raise ValueError(f"UX Bugs TTR subsection in {path} contains no 'P<n>: <days>' lines")
+        raise ValueError(
+            f"UX Bugs TTR subsection in {path} contains no 'P<n>: <days>' lines"
+        )
     return out
 
 
@@ -96,7 +101,9 @@ def ttr_deadline(bug, windows):
     return parse_date(bug["created"]) + timedelta(days=days)
 
 
-def quarter_metrics(open_bugs, resolved_bugs, year, q, collection_date, windows, warnings):
+def quarter_metrics(
+    open_bugs, resolved_bugs, year, q, collection_date, windows, warnings
+):
     q_start, q_end = quarter_bounds(year, q)
     if q_start > collection_date:
         status = "future"
@@ -108,10 +115,16 @@ def quarter_metrics(open_bugs, resolved_bugs, year, q, collection_date, windows,
     cust_open = [b for b in open_bugs if b.get("customer_reported")]
     cust_resolved = [b for b in resolved_bugs if b.get("customer_reported")]
 
-    created_in_q = [b for b in cust_open + cust_resolved
-                    if q_start <= parse_date(b["created"]) <= q_end]
-    resolved_in_q = [b for b in cust_resolved
-                     if b.get("resolved") and q_start <= parse_date(b["resolved"]) <= q_end]
+    created_in_q = [
+        b
+        for b in cust_open + cust_resolved
+        if q_start <= parse_date(b["created"]) <= q_end
+    ]
+    resolved_in_q = [
+        b
+        for b in cust_resolved
+        if b.get("resolved") and q_start <= parse_date(b["resolved"]) <= q_end
+    ]
 
     prio = {"P1": 0, "P2": 0, "P3": 0, "P4": 0}
     other = 0
@@ -120,8 +133,10 @@ def quarter_metrics(open_bugs, resolved_bugs, year, q, collection_date, windows,
             prio[b["priority"]] += 1
         else:
             other += 1
-            warnings.append(f"{b['key']}: unrecognized priority {b['priority']!r} "
-                            f"counted as 'other', excluded from P1-P4 and TTR scope")
+            warnings.append(
+                f"{b['key']}: unrecognized priority {b['priority']!r} "
+                f"counted as 'other', excluded from P1-P4 and TTR scope"
+            )
 
     total_created = len(created_in_q)
     total_resolved = len(resolved_in_q)
@@ -133,9 +148,12 @@ def quarter_metrics(open_bugs, resolved_bugs, year, q, collection_date, windows,
         if b["priority"] in TTR_PRIORITIES and parse_date(b["created"]) <= q_end:
             scope.append(b)
     for b in cust_resolved:
-        if (b["priority"] in TTR_PRIORITIES and b.get("resolved")
-                and parse_date(b["created"]) <= q_end
-                and parse_date(b["resolved"]) >= q_start):
+        if (
+            b["priority"] in TTR_PRIORITIES
+            and b.get("resolved")
+            and parse_date(b["created"]) <= q_end
+            and parse_date(b["resolved"]) >= q_start
+        ):
             scope.append(b)
 
     violation_cutoff = min(q_end, collection_date)
@@ -157,7 +175,10 @@ def quarter_metrics(open_bugs, resolved_bugs, year, q, collection_date, windows,
         "quarter_short": f"{year}-q{q}",
         "status": status,
         "total_created": total_created,
-        "p1": prio["P1"], "p2": prio["P2"], "p3": prio["P3"], "p4": prio["P4"],
+        "p1": prio["P1"],
+        "p2": prio["P2"],
+        "p3": prio["P3"],
+        "p4": prio["P4"],
         "other_priority": other,
         "total_resolved": total_resolved,
         "pct_remediated": pct_remediated,
@@ -169,35 +190,58 @@ def quarter_metrics(open_bugs, resolved_bugs, year, q, collection_date, windows,
 
 
 def current_state(open_bugs, collection_date, windows):
-    cust_scope = [b for b in open_bugs
-                  if b.get("customer_reported") and b["priority"] in TTR_PRIORITIES]
+    cust_scope = [
+        b
+        for b in open_bugs
+        if b.get("customer_reported") and b["priority"] in TTR_PRIORITIES
+    ]
     violations = []
     for b in cust_scope:
         dl = ttr_deadline(b, windows)
         if dl and dl <= collection_date:
-            violations.append({
-                "key": b["key"], "priority": b["priority"],
-                "summary": b["summary"], "created": b["created"],
-                "ttr_deadline": dl.isoformat(),
-            })
+            violations.append(
+                {
+                    "key": b["key"],
+                    "priority": b["priority"],
+                    "summary": b["summary"],
+                    "created": b["created"],
+                    "ttr_deadline": dl.isoformat(),
+                }
+            )
     violations.sort(key=lambda v: v["ttr_deadline"])
     return {
         "open_total": len(open_bugs),
         "ttr_scope_open": len(cust_scope),
         "violations": violations,
-        "pct_of_all_open": round(len(violations) / len(open_bugs), 2) if open_bugs else 0,
-        "pct_of_ttr_scope": round(len(violations) / len(cust_scope), 2) if cust_scope else 0,
+        "pct_of_all_open": round(len(violations) / len(open_bugs), 2)
+        if open_bugs
+        else 0,
+        "pct_of_ttr_scope": round(len(violations) / len(cust_scope), 2)
+        if cust_scope
+        else 0,
     }
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Compute quarterly UX bug metrics from a snapshot JSON")
-    ap.add_argument("--snapshot", required=True, help="Path to ux-bugs-data-YYYY-MM-DD.json")
-    ap.add_argument("--config", default="jira-config.md",
-                    help="Config file with '## TTR Windows' > '### UX Bugs' (default: jira-config.md)")
+    ap = argparse.ArgumentParser(
+        description="Compute quarterly UX bug metrics from a snapshot JSON"
+    )
+    ap.add_argument(
+        "--snapshot", required=True, help="Path to ux-bugs-data-YYYY-MM-DD.json"
+    )
+    ap.add_argument(
+        "--config",
+        default="jira-config.md",
+        help="Config file with '## TTR Windows' > '### UX Bugs' (default: jira-config.md)",
+    )
     ap.add_argument("--ttr", help="Override TTR windows, e.g. 'P1=45,P2=60,P3=180'")
-    ap.add_argument("--collection-date", help="Override collection date (default: snapshot as_of_date)")
-    ap.add_argument("--years", help="Comma-separated years (default: collection year and prior)")
+    ap.add_argument(
+        "--collection-date",
+        help="Override collection date (default: snapshot as_of_date)",
+    )
+    ap.add_argument(
+        "--years", help="Comma-separated years (default: collection year and prior)"
+    )
     args = ap.parse_args()
 
     snapshot = json.load(open(args.snapshot, encoding="utf-8"))
@@ -211,30 +255,47 @@ def main():
         except (OSError, ValueError) as e:
             sys.exit(f"error: no --ttr given and config unusable: {e}")
 
-    years = ([int(y) for y in args.years.split(",")] if args.years
-             else [collection.year - 1, collection.year])
+    years = (
+        [int(y) for y in args.years.split(",")]
+        if args.years
+        else [collection.year - 1, collection.year]
+    )
 
     warnings = []
     projects = {}
     for key, data in snapshot.items():
         if not isinstance(data, dict) or "open_bugs" not in data:
             continue
-        quarters = [quarter_metrics(data["open_bugs"], data["resolved_bugs"],
-                                    y, q, collection, windows, warnings)
-                    for y in years for q in (1, 2, 3, 4)]
+        quarters = [
+            quarter_metrics(
+                data["open_bugs"],
+                data["resolved_bugs"],
+                y,
+                q,
+                collection,
+                windows,
+                warnings,
+            )
+            for y in years
+            for q in (1, 2, 3, 4)
+        ]
         projects[key] = {
             "quarters": quarters,
             "current_state": current_state(data["open_bugs"], collection, windows),
         }
 
-    json.dump({
-        "as_of_date": snapshot.get("as_of_date"),
-        "collection_date": collection.isoformat(),
-        "ttr_windows": windows,
-        "years": years,
-        "projects": projects,
-        "warnings": sorted(set(warnings)),
-    }, sys.stdout, indent=2)
+    json.dump(
+        {
+            "as_of_date": snapshot.get("as_of_date"),
+            "collection_date": collection.isoformat(),
+            "ttr_windows": windows,
+            "years": years,
+            "projects": projects,
+            "warnings": sorted(set(warnings)),
+        },
+        sys.stdout,
+        indent=2,
+    )
     print()
 
 
