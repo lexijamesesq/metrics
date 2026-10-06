@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
 
+# A PR's runs group on its ref (refs/pull/<N>/merge), so a new push cancels the
+# superseded run. A push to the default branch groups on its own sha and is
+# never cancelled: GitHub keeps only one pending run per group, so a shared
+# group would silently drop a pending push run -- and with it any job a repo
+# adds that must run on every merge, such as a release job.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
