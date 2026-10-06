@@ -21,25 +21,31 @@ from datetime import datetime
 from pathlib import Path
 
 # Add lib to path
-sys.path.insert(0, str(Path(__file__).parent / 'lib'))
+sys.path.insert(0, str(Path(__file__).parent / "lib"))
 
-from data_processing import (
-    read_pendo_csv,
-    calculate_nps_score
-)
+from data_processing import read_pendo_csv, calculate_nps_score
 
 
 def format_month_display(month: str) -> str:
     """Convert YYYY-MM to 'Month YYYY' format"""
-    date = datetime.strptime(month, '%Y-%m')
-    return date.strftime('%B %Y')
+    date = datetime.strptime(month, "%Y-%m")
+    return date.strftime("%B %Y")
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Calculate metrics and update tracking CSVs')
-    parser.add_argument('--month', required=True, help='Target month in YYYY-MM format (e.g., 2025-11)')
-    parser.add_argument('--product', required=True, help='Product short code (e.g., mc, cq)')
-    parser.add_argument('--data-dir', help='Product data directory name (default: derived from product code)')
+    parser = argparse.ArgumentParser(
+        description="Calculate metrics and update tracking CSVs"
+    )
+    parser.add_argument(
+        "--month", required=True, help="Target month in YYYY-MM format (e.g., 2025-11)"
+    )
+    parser.add_argument(
+        "--product", required=True, help="Product short code (e.g., mc, cq)"
+    )
+    parser.add_argument(
+        "--data-dir",
+        help="Product data directory name (default: derived from product code)",
+    )
     args = parser.parse_args()
 
     target_month = args.month
@@ -51,13 +57,15 @@ def main():
 
     # Setup paths
     base_dir = Path(__file__).parent.parent
-    nps_csv = base_dir / 'Data' / product_folder / f'nps-{target_month}.csv'
+    nps_csv = base_dir / "Data" / product_folder / f"nps-{target_month}.csv"
 
     # Validate input file exists
     if not nps_csv.exists():
         print(f"❌ Error: NPS CSV not found: {nps_csv}")
         print("\nRun 01_extract_data.py first:")
-        print(f"   python 01_extract_data.py --month {target_month} --product {product}")
+        print(
+            f"   python 01_extract_data.py --month {target_month} --product {product}"
+        )
         sys.exit(1)
 
     # Read NPS data
@@ -75,7 +83,7 @@ def main():
 
     for row in rows:
         # Rating column might be 'Rating', 'Score', or similar
-        rating_value = row.get('Rating') or row.get('Score') or row.get('NPS Score')
+        rating_value = row.get("Rating") or row.get("Score") or row.get("NPS Score")
         if rating_value:
             try:
                 ratings.append(int(rating_value))
@@ -83,7 +91,7 @@ def main():
                 pass
 
         # Count comments (non-empty Response field)
-        response_value = row.get('Response', '').strip()
+        response_value = row.get("Response", "").strip()
         if response_value:
             comment_count += 1
 
@@ -100,13 +108,17 @@ def main():
     print(f"  Total Responses: {breakdown['total_responses']}")
     print(f"  Promoters (9-10): {breakdown['promoters']} ({breakdown['promoter_pct']})")
     print(f"  Passives (7-8): {breakdown['passives']} ({breakdown['passive_pct']})")
-    print(f"  Detractors (0-6): {breakdown['detractors']} ({breakdown['detractor_pct']})")
-    print(f"  Comments: {comment_count} ({round((comment_count / breakdown['total_responses']) * 100, 1)}%)")
+    print(
+        f"  Detractors (0-6): {breakdown['detractors']} ({breakdown['detractor_pct']})"
+    )
+    print(
+        f"  Comments: {comment_count} ({round((comment_count / breakdown['total_responses']) * 100, 1)}%)"
+    )
 
     # Success summary
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✅ SUCCESS")
-    print("="*60)
+    print("=" * 60)
     print(f"Month: {month_display}")
     print(f"NPS Score: {nps_score}")
     print(f"Responses: {breakdown['total_responses']}")
@@ -116,5 +128,5 @@ def main():
     print("  2. Generate analysis with Claude Code (Step 6)")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

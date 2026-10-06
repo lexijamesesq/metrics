@@ -57,10 +57,8 @@ def calculate_nps_score(ratings: List[int]) -> Tuple[int, Dict]:
         "passive_pct": round(passive_pct / 100, 2),
         "detractors": detractors,
         "detractor_pct": round(detractor_pct / 100, 2),
-        "nps_score": nps_score
+        "nps_score": nps_score,
     }
-
-
 
 
 def read_pendo_csv(csv_path: Path) -> Tuple[List[Dict], List[str]]:
@@ -74,7 +72,7 @@ def read_pendo_csv(csv_path: Path) -> Tuple[List[Dict], List[str]]:
         (rows_list, column_names)
     """
     rows = []
-    with open(csv_path, 'r', encoding='utf-8') as f:
+    with open(csv_path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         columns = reader.fieldnames
         for row in reader:
@@ -98,21 +96,21 @@ def validate_csv_completeness(rows: List[Dict], target_month: str) -> Tuple[bool
         return False, "CSV is empty"
 
     # Parse target month
-    year, month = map(int, target_month.split('-'))
+    year, month = map(int, target_month.split("-"))
 
     # Get first and last dates from CSV
     dates = []
     for row in rows:
-        date_str = row.get('Date', '')
+        date_str = row.get("Date", "")
         if date_str:
             try:
                 # Pendo format: "2025-11-01T00:00:00.000Z" or "2025-11-01 12:34:56" or "2025-11-01"
                 # Extract date part (before T or space)
-                if 'T' in date_str:
-                    date_part = date_str.split('T')[0]
+                if "T" in date_str:
+                    date_part = date_str.split("T")[0]
                 else:
-                    date_part = date_str.split(' ')[0]
-                date_obj = datetime.strptime(date_part, '%Y-%m-%d')
+                    date_part = date_str.split(" ")[0]
+                date_obj = datetime.strptime(date_part, "%Y-%m-%d")
                 dates.append(date_obj)
             except ValueError:
                 continue
@@ -131,7 +129,10 @@ def validate_csv_completeness(rows: List[Dict], target_month: str) -> Tuple[bool
         if last_date.year == year and last_date.month == month and last_date.day >= 25:
             return True, f"Complete month: {first_date.date()} to {last_date.date()}"
 
-    return False, f"Incomplete month: {first_date.date()} to {last_date.date()} (expected full {target_month})"
+    return (
+        False,
+        f"Incomplete month: {first_date.date()} to {last_date.date()} (expected full {target_month})",
+    )
 
 
 def extract_month_csv(source_csv: Path, target_month: str, output_csv: Path) -> None:
@@ -146,26 +147,26 @@ def extract_month_csv(source_csv: Path, target_month: str, output_csv: Path) -> 
     rows, columns = read_pendo_csv(source_csv)
 
     # Filter rows for target month
-    year, month = map(int, target_month.split('-'))
+    year, month = map(int, target_month.split("-"))
     filtered_rows = []
 
     for row in rows:
-        date_str = row.get('Date', '')
+        date_str = row.get("Date", "")
         if date_str:
             try:
                 # Extract date part (before T or space)
-                if 'T' in date_str:
-                    date_part = date_str.split('T')[0]
+                if "T" in date_str:
+                    date_part = date_str.split("T")[0]
                 else:
-                    date_part = date_str.split(' ')[0]
-                date_obj = datetime.strptime(date_part, '%Y-%m-%d')
+                    date_part = date_str.split(" ")[0]
+                date_obj = datetime.strptime(date_part, "%Y-%m-%d")
                 if date_obj.year == year and date_obj.month == month:
                     filtered_rows.append(row)
             except ValueError:
                 continue
 
     # Write filtered data
-    with open(output_csv, 'w', newline='', encoding='utf-8') as f:
+    with open(output_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=columns)
         writer.writeheader()
         writer.writerows(filtered_rows)
@@ -180,22 +181,22 @@ def get_collection_period(rows: List[Dict]) -> Tuple[str, str]:
     """
     dates = []
     for row in rows:
-        date_str = row.get('Date', '')
+        date_str = row.get("Date", "")
         if date_str:
             try:
                 # Extract date part (before T or space)
-                if 'T' in date_str:
-                    date_part = date_str.split('T')[0]
+                if "T" in date_str:
+                    date_part = date_str.split("T")[0]
                 else:
-                    date_part = date_str.split(' ')[0]
-                date_obj = datetime.strptime(date_part, '%Y-%m-%d')
+                    date_part = date_str.split(" ")[0]
+                date_obj = datetime.strptime(date_part, "%Y-%m-%d")
                 dates.append(date_obj)
             except ValueError:
                 continue
 
     if dates:
-        first = min(dates).strftime('%Y-%m-%d')
-        last = max(dates).strftime('%Y-%m-%d')
+        first = min(dates).strftime("%Y-%m-%d")
+        last = max(dates).strftime("%Y-%m-%d")
         return first, last
 
     return "", ""

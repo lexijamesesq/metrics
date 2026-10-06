@@ -100,8 +100,14 @@ import re
 import sys
 import unicodedata
 
-EXPECTED_SECTIONS = ["Summary", "Top Pain Points", "3 Things That Matter",
-                     "What's Working", "The Signal", "Document Links"]
+EXPECTED_SECTIONS = [
+    "Summary",
+    "Top Pain Points",
+    "3 Things That Matter",
+    "What's Working",
+    "The Signal",
+    "Document Links",
+]
 BANNED_SECTION_PAT = re.compile(r"features?\s+launched", re.I)
 MIN_FRAGMENT = 12
 
@@ -136,7 +142,10 @@ AI_KILL_WORDS = [
 AI_HEDGING = [
     ("could potentially", re.compile(r"\bcould\s+potentially\b", re.I)),
     ("might consider", re.compile(r"\bmight\s+consider\b", re.I)),
-    ("it may be worth exploring", re.compile(r"\bit\s+may\s+be\s+worth\s+exploring\b", re.I)),
+    (
+        "it may be worth exploring",
+        re.compile(r"\bit\s+may\s+be\s+worth\s+exploring\b", re.I),
+    ),
     ("one might", re.compile(r"\bone\s+might\b", re.I)),
 ]
 AI_PHRASES = AI_KILL_WORDS + AI_HEDGING
@@ -144,8 +153,16 @@ AI_PHRASES = AI_KILL_WORDS + AI_HEDGING
 
 def normalize(s):
     s = unicodedata.normalize("NFKC", s)
-    for a, b in [("‘", "'"), ("’", "'"), ("“", '"'), ("”", '"'),
-                 ("–", "-"), ("—", "-"), ("…", "..."), (" ", " ")]:
+    for a, b in [
+        ("‘", "'"),
+        ("’", "'"),
+        ("“", '"'),
+        ("”", '"'),
+        ("–", "-"),
+        ("—", "-"),
+        ("…", "..."),
+        (" ", " "),
+    ]:
         s = s.replace(a, b)
     return s
 
@@ -165,7 +182,9 @@ def depunct(s):
 
 def find_sections(text):
     """Return list of (title, start, end) for ## sections."""
-    heads = [(m.group(1).strip(), m.start()) for m in re.finditer(r"^##\s+(.+)$", text, re.M)]
+    heads = [
+        (m.group(1).strip(), m.start()) for m in re.finditer(r"^##\s+(.+)$", text, re.M)
+    ]
     out = []
     for i, (title, start) in enumerate(heads):
         end = heads[i + 1][1] if i + 1 < len(heads) else len(text)
@@ -201,16 +220,25 @@ def check_quote(quote, responses_norm, responses_raw):
         if any(nf.lower() in r.lower() for r in responses_norm):
             results.append(("DRIFT-case", frag))
             continue
-        if any(re.sub(r"\s+", "", nf).lower() in re.sub(r"\s+", "", r).lower()
-               for r in responses_norm):
+        if any(
+            re.sub(r"\s+", "", nf).lower() in re.sub(r"\s+", "", r).lower()
+            for r in responses_norm
+        ):
             results.append(("DRIFT-whitespace", frag))
             continue
         if any(depunct(nf) in depunct(r) for r in responses_norm):
             results.append(("DRIFT-punctuation", frag))
             continue
         results.append(("DRIFT-content", frag))
-    worst_order = ["DRIFT-content", "DRIFT-punctuation", "DRIFT-whitespace",
-                   "DRIFT-case", "cosmetic", "exact", "skipped"]
+    worst_order = [
+        "DRIFT-content",
+        "DRIFT-punctuation",
+        "DRIFT-whitespace",
+        "DRIFT-case",
+        "cosmetic",
+        "exact",
+        "skipped",
+    ]
     worst = min((r[0] for r in results), key=worst_order.index, default="skipped")
     return worst, results
 
@@ -219,10 +247,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--analysis", required=True)
     ap.add_argument("--csv", required=True)
-    ap.add_argument("--persist-to",
-                    help="Tracking note whose frontmatter receives "
-                         "validation_run/validation_verdict/validation_errors/"
-                         "validation_warnings keys")
+    ap.add_argument(
+        "--persist-to",
+        help="Tracking note whose frontmatter receives "
+        "validation_run/validation_verdict/validation_errors/"
+        "validation_warnings keys",
+    )
     args = ap.parse_args()
 
     try:
@@ -231,7 +261,11 @@ def main():
     except OSError as e:
         sys.exit(f"error: {e}")
 
-    resp_col = "Response" if rows and "Response" in rows[0] else (list(rows[0]) if rows else ["Response"])[0]
+    resp_col = (
+        "Response"
+        if rows and "Response" in rows[0]
+        else (list(rows[0]) if rows else ["Response"])[0]
+    )
     responses_raw = [r.get(resp_col) or "" for r in rows]
     responses_norm = [squash(normalize(r)) for r in responses_raw]
 
@@ -253,8 +287,14 @@ def main():
     for t in titles:
         if t not in EXPECTED_SECTIONS:
             add("warn", "section-unexpected", f"unexpected section '## {t}'")
-    for m in re.finditer(r"^(?:#{2,4}\s*|\*\*)\s*features?\s+launched[^\n]*", text, re.M | re.I):
-        add("error", "banned-section", f"banned 'Features launched' block present: {m.group(0)[:80]!r}")
+    for m in re.finditer(
+        r"^(?:#{2,4}\s*|\*\*)\s*features?\s+launched[^\n]*", text, re.M | re.I
+    ):
+        add(
+            "error",
+            "banned-section",
+            f"banned 'Features launched' block present: {m.group(0)[:80]!r}",
+        )
 
     def section_text(name):
         for t, s, e in sections:
@@ -267,12 +307,18 @@ def main():
     if pp:
         bullets = re.findall(r"^\s*[-*]\s+(.+)$", pp, re.M)
         if len(bullets) != 5:
-            add("error", "pain-point-count", f"{len(bullets)} bullets (spec: exactly 5)")
+            add(
+                "error", "pain-point-count", f"{len(bullets)} bullets (spec: exactly 5)"
+            )
         for b in bullets:
             if re.search(r'[“"]', b):
                 add("warn", "pain-point-quote", f"bullet contains a quote: {b[:60]}")
             if re.search(r"\d+\s*%", b):
-                add("warn", "pain-point-frequency", f"bullet contains a percentage: {b[:60]}")
+                add(
+                    "warn",
+                    "pain-point-frequency",
+                    f"bullet contains a percentage: {b[:60]}",
+                )
 
     # --- 3 Things That Matter: exactly 3 bold headers ---
     ttm = section_text("3 Things That Matter")
@@ -280,7 +326,11 @@ def main():
         # Colon lands inside or outside the bold (**X**: and **X:** both occur)
         holders = re.findall(r"^\*\*[^*]+\*\*\s*:|^\*\*[^*]+:\*\*", ttm, re.M)
         if len(holders) != 3:
-            add("error", "three-things-count", f"{len(holders)} bold theme headers (spec: 3)")
+            add(
+                "error",
+                "three-things-count",
+                f"{len(holders)} bold theme headers (spec: 3)",
+            )
 
     # --- The Signal: <=2 paragraphs, no bold headers ---
     sig = section_text("The Signal")
@@ -288,20 +338,37 @@ def main():
         body = re.sub(r"^##\s+.+$", "", sig, count=1, flags=re.M).strip()
         paras = [p for p in re.split(r"\n\s*\n", body) if p.strip()]
         if len(paras) > 2:
-            add("warn", "signal-paragraphs", f"{len(paras)} paragraphs (spec: 1, max 2)")
+            add(
+                "warn", "signal-paragraphs", f"{len(paras)} paragraphs (spec: 1, max 2)"
+            )
         if re.search(r"\*\*[^*]+\*\*", body):
-            add("error", "signal-bold-header", "bold text in The Signal (spec: prose only)")
+            add(
+                "error",
+                "signal-bold-header",
+                "bold text in The Signal (spec: prose only)",
+            )
 
     # --- same-value delta prose ---
     for m in re.finditer(
-            r"from\s+(-?\d+(?:\.\d+)?)\s*(%|points?)?\s+(?:to|down to|up to)\s+(-?\d+(?:\.\d+)?)\s*(%|points?)?",
-            text, re.I):
+        r"from\s+(-?\d+(?:\.\d+)?)\s*(%|points?)?\s+(?:to|down to|up to)\s+(-?\d+(?:\.\d+)?)\s*(%|points?)?",
+        text,
+        re.I,
+    ):
         if m.group(1) == m.group(3):
-            add("error", "same-value-delta", f"delta prose with identical values: {m.group(0)!r}")
+            add(
+                "error",
+                "same-value-delta",
+                f"delta prose with identical values: {m.group(0)!r}",
+            )
 
     # --- quote fidelity ---
     checked = passed = 0
-    for section_name in ("3 Things That Matter", "What's Working", "The Signal", "Summary"):
+    for section_name in (
+        "3 Things That Matter",
+        "What's Working",
+        "The Signal",
+        "Summary",
+    ):
         stext = section_text(section_name)
         for quote, _ in extract_quotes(stext):
             checked += 1
@@ -310,13 +377,20 @@ def main():
                 passed += 1
             elif verdict == "cosmetic":
                 passed += 1
-                add("info", "quote-cosmetic",
-                    f"[{section_name}] normalized-only match: {quote[:70]!r}")
+                add(
+                    "info",
+                    "quote-cosmetic",
+                    f"[{section_name}] normalized-only match: {quote[:70]!r}",
+                )
             else:
-                frag_details = [f"{v}: {f[:60]!r}" for v, f in results if v.startswith("DRIFT")]
-                add("error" if verdict == "DRIFT-content" else "warn",
+                frag_details = [
+                    f"{v}: {f[:60]!r}" for v, f in results if v.startswith("DRIFT")
+                ]
+                add(
+                    "error" if verdict == "DRIFT-content" else "warn",
                     f"quote-{verdict.lower()}",
-                    f"[{section_name}] {'; '.join(frag_details)}")
+                    f"[{section_name}] {'; '.join(frag_details)}",
+                )
 
     # --- AI-phrasing: whole document body, one finding per distinct phrase ---
     body_norm = normalize(text)
@@ -335,25 +409,35 @@ def main():
 
     if args.persist_to:
         from datetime import date as _date
+
         verdict_str = "fail" if sev["error"] > 0 else "pass"
         persisted = False
         try:
             note_text = open(args.persist_to, encoding="utf-8").read()
             parts = note_text.split("---", 2)
             if len(parts) < 3:
-                add("warn", "persist-failed", f"{args.persist_to}: no frontmatter block")
+                add(
+                    "warn", "persist-failed", f"{args.persist_to}: no frontmatter block"
+                )
             else:
                 fm_body = parts[1]
-                for key in ("validated", "validation_run", "validation_verdict",
-                            "validation_errors", "validation_warnings"):
+                for key in (
+                    "validated",
+                    "validation_run",
+                    "validation_verdict",
+                    "validation_errors",
+                    "validation_warnings",
+                ):
                     fm_body = re.sub(rf"^{key}:.*\n", "", fm_body, flags=re.M)
                 fm_body = fm_body.rstrip("\n") + (
                     f"\nvalidation_run: {_date.today().isoformat()}"
                     f"\nvalidation_verdict: {verdict_str}"
                     f"\nvalidation_errors: {sev['error']}"
-                    f"\nvalidation_warnings: {sev['warn']}\n")
+                    f"\nvalidation_warnings: {sev['warn']}\n"
+                )
                 open(args.persist_to, "w", encoding="utf-8").write(
-                    "---" + fm_body + "---" + parts[2])
+                    "---" + fm_body + "---" + parts[2]
+                )
                 persisted = True
         except OSError as e:
             add("warn", "persist-failed", str(e))
@@ -363,13 +447,17 @@ def main():
             # reports -- a persist failure that isn't visible in the summary
             # is a failure that shipped quietly.
             sev = tally()
-    json.dump({
-        "analysis": args.analysis,
-        "csv": args.csv,
-        "csv_rows": len(rows),
-        "findings": findings,
-        "summary": {**sev, "quotes_checked": checked, "quotes_passed": passed},
-    }, sys.stdout, indent=2)
+    json.dump(
+        {
+            "analysis": args.analysis,
+            "csv": args.csv,
+            "csv_rows": len(rows),
+            "findings": findings,
+            "summary": {**sev, "quotes_checked": checked, "quotes_passed": passed},
+        },
+        sys.stdout,
+        indent=2,
+    )
     print()
 
 

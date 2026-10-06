@@ -29,29 +29,3 @@ jobs:
     with:
       dotty_ref: v1
       check_name: checks
-
-  ruff:
-    name: ci / ruff
-    needs: [floor]
-    if: ${{ needs.floor.outputs.mechanical != 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install uv 0.11.22
-        run: pip install uv==0.11.22
-      - name: ruff
-        run: uvx ruff@0.16.5 check --force-exclude .
-
-  shellcheck:
-    name: ci / shellcheck
-    needs: [floor]
-    if: ${{ needs.floor.outputs.mechanical != 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
-        with:
-          scandir: '.'
-          ignore_paths: .git

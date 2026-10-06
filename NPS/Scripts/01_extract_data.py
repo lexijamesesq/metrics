@@ -22,18 +22,14 @@ from pathlib import Path
 from typing import Optional
 
 # Add lib to path
-sys.path.insert(0, str(Path(__file__).parent / 'lib'))
+sys.path.insert(0, str(Path(__file__).parent / "lib"))
 
-from data_processing import (
-    read_pendo_csv,
-    validate_csv_completeness,
-    extract_month_csv
-)
+from data_processing import read_pendo_csv, validate_csv_completeness, extract_month_csv
 
 
 def find_staging_csv(staging_dir: Path) -> Optional[Path]:
     """Find CSV file in staging directory"""
-    csv_files = list(staging_dir.glob('*.csv'))
+    csv_files = list(staging_dir.glob("*.csv"))
 
     if len(csv_files) == 0:
         return None
@@ -48,11 +44,20 @@ def find_staging_csv(staging_dir: Path) -> Optional[Path]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Extract and validate NPS CSV')
-    parser.add_argument('--month', required=True, help='Target month in YYYY-MM format (e.g., 2025-11)')
-    parser.add_argument('--product', required=True, help='Product short code (e.g., mc, cq)')
-    parser.add_argument('--data-dir', help='Product data directory name (default: derived from product code)')
-    parser.add_argument('--yes', '-y', action='store_true', help='Skip confirmation prompts')
+    parser = argparse.ArgumentParser(description="Extract and validate NPS CSV")
+    parser.add_argument(
+        "--month", required=True, help="Target month in YYYY-MM format (e.g., 2025-11)"
+    )
+    parser.add_argument(
+        "--product", required=True, help="Product short code (e.g., mc, cq)"
+    )
+    parser.add_argument(
+        "--data-dir",
+        help="Product data directory name (default: derived from product code)",
+    )
+    parser.add_argument(
+        "--yes", "-y", action="store_true", help="Skip confirmation prompts"
+    )
     args = parser.parse_args()
 
     target_month = args.month
@@ -63,18 +68,20 @@ def main():
 
     # Validate month format
     try:
-        year, month = map(int, target_month.split('-'))
+        year, month = map(int, target_month.split("-"))
         if not (1 <= month <= 12):
             raise ValueError("Month must be between 01 and 12")
     except (ValueError, AttributeError):
-        print(f"❌ Error: Invalid month format '{target_month}'. Use YYYY-MM (e.g., 2025-11)")
+        print(
+            f"❌ Error: Invalid month format '{target_month}'. Use YYYY-MM (e.g., 2025-11)"
+        )
         sys.exit(1)
 
     # Setup paths
     base_dir = Path(__file__).parent.parent
-    staging_dir = base_dir / 'Data' / 'Staging' / product_folder
-    output_dir = base_dir / 'Data' / product_folder
-    output_file = output_dir / f'nps-{target_month}.csv'
+    staging_dir = base_dir / "Data" / "Staging" / product_folder
+    output_dir = base_dir / "Data" / product_folder
+    output_file = output_dir / f"nps-{target_month}.csv"
 
     # Check staging directory exists
     if not staging_dir.exists():
@@ -111,7 +118,7 @@ def main():
         print("\nContinuing with extraction, but data may be incomplete.")
         if not args.yes:
             response = input("Continue? (y/n): ")
-            if response.lower() != 'y':
+            if response.lower() != "y":
                 print("Aborted.")
                 sys.exit(0)
 
@@ -127,7 +134,7 @@ def main():
             print("⚠️  Warning: Output file already exists")
             if not args.yes:
                 response = input("Overwrite? (y/n): ")
-                if response.lower() != 'y':
+                if response.lower() != "y":
                     print("Aborted.")
                     sys.exit(0)
 
@@ -152,9 +159,9 @@ def main():
         print(f"   Please manually delete: {staging_csv}")
 
     # Success summary
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✅ SUCCESS")
-    print("="*60)
+    print("=" * 60)
     print(f"Month: {target_month}")
     print(f"Output: {output_file}")
     print(f"Rows: {len(extracted_rows)}")
@@ -163,8 +170,10 @@ def main():
         print("\n⚠️  Note: Data validation showed potential incompleteness")
         print("   Review extraction carefully")
 
-    print(f"\nNext step: Run 02_update_tracking.py --month {target_month} --product {product}")
+    print(
+        f"\nNext step: Run 02_update_tracking.py --month {target_month} --product {product}"
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

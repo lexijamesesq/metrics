@@ -37,7 +37,7 @@ pre-commit run --all-files  # gitleaks-staged + the standard hook set
 
 ## CI
 
-`.github/workflows/ci.yml`, required via the "Protect main" ruleset: the estate's shared `floor` job (`ci / checks`), plus this repo's own `ruff` (`ci / ruff`, Python lint) and `shellcheck` (`ci / shellcheck`, `ludeeus/action-shellcheck`, no-op today — no `.sh` files yet, kept for when scripts are added). The ruleset requires each job's check directly; a new job needs its check added to the ruleset in dotty's `rulesets/default-branch.json`. PR-time secret scanning is the trusted lane's `trusted-scan` (`gate.yml`), a separate required check.
+`.github/workflows/ci.yml`, required via the "Protect main" ruleset: the estate's shared `floor` job (`ci / checks`) — its pre-commit suite runs ruff and shellcheck on the files a PR changes, except on a PR the triage step classifies as `mechanical` (`estate-ci.yml`'s own gate: `steps.triage.outputs.classification != 'mechanical'`, which the pre-commit step inherits via the `precommit_cfg` step it depends on) — so this repo carries no separate `ruff`/`shellcheck` job anymore. The ruleset requires each job's check directly; a new job needs its check added to the ruleset in dotty's `rulesets/default-branch.json`. PR-time secret scanning is the trusted lane's `trusted-scan` (`gate.yml`), a separate required check.
 
 ## Conventions
 
