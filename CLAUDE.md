@@ -37,7 +37,7 @@ pre-commit run --all-files  # gitleaks-staged + the standard hook set
 
 ## CI
 
-`.github/workflows/ci.yml` calls Dotty’s shared `estate-pr-ci.yml@v1` workflow on pull request changes, including title and body edits. The required check is `CI / pre-merge checks`; the caller supplies the shared workflow’s declared secrets. Keep release and deployment workflows independent of this caller.
+`.github/workflows/ci.yml` calls Dotty’s shared `estate-pr-ci.yml@v1` workflow on pull request changes, including title and body edits. The required check is `Shared / CI / Pre-Merge Checks`; the caller supplies the shared workflow’s declared secrets. Keep release and deployment workflows independent of this caller.
 
 ## Conventions
 
