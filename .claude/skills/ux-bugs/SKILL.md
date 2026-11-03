@@ -242,6 +242,8 @@ For each project in `PROJECT_KEYS`:
 
 Use `Glob` to find all existing files matching `UX Bugs/Tracking/TTR Violations/{project_key_lowercase}-*.md`. Delete each with `rm` through `Bash`. Deletion is destructive and `Bash(rm:*)` is not in `allowed-tools`, so the harness asks the operator to confirm each removal; do not work around the prompt.
 
+If any removal is declined, or the prompt goes unanswered (an unattended run), stop here: write no violation files and no current-state note for this run, and report which files remain, with the reason. A half-cleared folder would show cleared bugs as still overdue on the dashboard; a skipped run leaves the previous, consistent state in place.
+
 For each entry in the script's `current_state.violations` for this project (customer-reported P1–P3 with `ttr_deadline <= COLLECTION_DATE` — the same scope as the quarterly TTR metric, so the violation files and the percentages always agree):
 
 **File:** `UX Bugs/Tracking/TTR Violations/{bug-key-lowercase}.md`
