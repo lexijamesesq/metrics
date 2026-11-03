@@ -23,7 +23,7 @@ Collects UX Bug metrics for configured Jira projects via Atlassian MCP. Calculat
 
 ## Invocation
 
-```
+```text
 /ux-bugs [YYYY-MM-DD]
 ```
 
@@ -35,6 +35,7 @@ Collects UX Bug metrics for configured Jira projects via Atlassian MCP. Calculat
 Parse `$ARGUMENTS` for a date in `YYYY-MM-DD` format. If empty, use today's date.
 
 Set these variables:
+
 - `COLLECTION_DATE` = "YYYY-MM-DD"
 - `CURRENT_YEAR` = year from collection date (for quarterly calculations)
 
@@ -47,25 +48,29 @@ Read `jira-config.md` from the project root. If the file is not found, stop and 
 Extract the following values from the config sections:
 
 **From Connection:**
+
 - `CLOUD_ID` ← `cloud_id`
 - `JIRA_BASE_URL` ← `base_url`
 
 **From UX Bug Projects:**
+
 - `PROJECT_KEYS` ← list of project keys (e.g., `["PROJ1", "PROJ2"]`)
 
 **From Custom Fields > UX Bugs:**
+
 - `SALESFORCE_COUNT_FIELD` ← `salesforce_count` (e.g., `customfield_XXXXX`)
 - `REQUIREMENT_TYPE_FIELD` ← `requirement_type_field` (e.g., `Requirement Type[Dropdown]`)
 - `REQUIREMENT_TYPE_VALUE` ← `requirement_type_value` (e.g., `UX`)
 
 **From TTR Windows:**
+
 - `TTR_WINDOWS` ← dict mapping priority to days (e.g., `{"P1": 45, "P2": 60, "P3": 180, "P4": None}`)
 
 ## Step 1: Query Open Bugs
 
 For each project key in `PROJECT_KEYS`, query Atlassian for all open UX bugs:
 
-```
+```text
 mcp__atlassian__searchJiraIssuesUsingJql(
     cloudId="{CLOUD_ID}",
     jql='statusCategory != Done AND "{REQUIREMENT_TYPE_FIELD}" = {REQUIREMENT_TYPE_VALUE} AND project = {PROJECT_KEY}',
@@ -85,7 +90,7 @@ Do NOT retry in the same session.
 
 For each project key in `PROJECT_KEYS`, query for resolved customer-reported UX bugs:
 
-```
+```text
 mcp__atlassian__searchJiraIssuesUsingJql(
     cloudId="{CLOUD_ID}",
     jql='statusCategory = Done AND salesforceAssociatedIds IS NOT empty AND "{REQUIREMENT_TYPE_FIELD}" = {REQUIREMENT_TYPE_VALUE} AND project = {PROJECT_KEY}',
@@ -116,7 +121,7 @@ def transform_open_bug(jira_bug):
         "created": created_date,
         "duedate": fields.get("duedate"),
         "status": fields["status"]["name"],
-        "customer_reported": customer_reported
+        "customer_reported": customer_reported,
     }
 ```
 
@@ -126,7 +131,11 @@ def transform_open_bug(jira_bug):
 def transform_resolved_bug(jira_bug):
     fields = jira_bug["fields"]
     created_date = fields["created"].split("T")[0]
-    resolved_date = fields.get("resolutiondate", "").split("T")[0] if fields.get("resolutiondate") else None
+    resolved_date = (
+        fields.get("resolutiondate", "").split("T")[0]
+        if fields.get("resolutiondate")
+        else None
+    )
     salesforce_count = fields.get("{SALESFORCE_COUNT_FIELD}")
     customer_reported = salesforce_count is not None and salesforce_count > 0
 
@@ -137,7 +146,7 @@ def transform_resolved_bug(jira_bug):
         "created": created_date,
         "resolved": resolved_date,
         "project": fields["project"]["key"],
-        "customer_reported": customer_reported
+        "customer_reported": customer_reported,
     }
 ```
 
@@ -271,7 +280,7 @@ updated: {COLLECTION_DATE}
 
 **Body — heading and summary line:**
 
-```
+```text
 # {PROJECT_KEY} UX Bugs — Current State
 
 **As of {COLLECTION_DATE}:** {N} open bugs; {M} of {S} customer-reported P1–P3 outside TTR ({PCT_INT}% of TTR scope)
@@ -303,7 +312,7 @@ Output to user:
 
 For each project in `PROJECT_KEYS`, output:
 
-```
+```text
 ## UX Bugs Collection Complete — {COLLECTION_DATE}
 
 ### Quarterly Summary ({PROJECT_KEY})
@@ -317,7 +326,7 @@ For each project in `PROJECT_KEYS`, output:
 
 Then after all projects:
 
-```
+```text
 ### TTR Validation: {discrepancy count} issues found
 
 Files updated:
@@ -330,7 +339,8 @@ Files updated:
 ## Step 9: Push to Google Sheets
 
 Read the config:
-```
+
+```text
 Read: Infrastructure/sheets-api-config.md
 ```
 
@@ -365,7 +375,7 @@ For each open bug across **all projects in `PROJECT_KEYS`** with `customer_repor
 
 ### Report Discrepancies
 
-```
+```text
 TTR Due Date Validation:
   - {N} bugs checked (per project)
   - {M} discrepancies found:
@@ -389,7 +399,7 @@ Update due dates for these {M} bugs? (Y/N)
 
 For each discrepancy, update Jira:
 
-```
+```text
 mcp__atlassian__editJiraIssue(
     cloudId="{CLOUD_ID}",
     issueIdOrKey="{BUG_KEY}",
@@ -399,7 +409,7 @@ mcp__atlassian__editJiraIssue(
 
 Then add comment:
 
-```
+```text
 mcp__atlassian__addCommentToJiraIssue(
     cloudId="{CLOUD_ID}",
     issueIdOrKey="{BUG_KEY}",
