@@ -8,7 +8,6 @@ allowed-tools:
   - mcp__atlassian__editJiraIssue
   - mcp__atlassian__addCommentToJiraIssue
   - mcp__atlassian__getAccessibleAtlassianResources
-  - mcp__obsidian__delete_note
   - Read
   - Write
   - Glob
@@ -241,7 +240,7 @@ For each project in `PROJECT_KEYS`:
 
 **Directory:** `UX Bugs/Tracking/TTR Violations/`
 
-Use `Glob` to find all existing files matching `UX Bugs/Tracking/TTR Violations/{project_key_lowercase}-*.md`. Delete each using `mcp__obsidian__delete_note` (set `confirmPath` = `path`).
+Use `Glob` to find all existing files matching `UX Bugs/Tracking/TTR Violations/{project_key_lowercase}-*.md`. Delete each with `rm` through `Bash`. Deletion is destructive and `Bash(rm:*)` is not in `allowed-tools`, so the harness asks the operator to confirm each removal; do not work around the prompt.
 
 For each entry in the script's `current_state.violations` for this project (customer-reported P1–P3 with `ttr_deadline <= COLLECTION_DATE` — the same scope as the quarterly TTR metric, so the violation files and the percentages always agree):
 
