@@ -240,9 +240,7 @@ For each project in `PROJECT_KEYS`:
 
 **Directory:** `UX Bugs/Tracking/TTR Violations/`
 
-Use `Glob` to find all existing files matching `UX Bugs/Tracking/TTR Violations/{project_key_lowercase}-*.md`. Delete each with `rm` through `Bash`. Deletion is destructive and `Bash(rm:*)` is not in `allowed-tools`, so the harness asks the operator to confirm each removal; do not work around the prompt.
-
-If any removal is declined, or the prompt goes unanswered (an unattended run), stop here: write no violation files and no current-state note for this run, and report which files remain, with the reason. A half-cleared folder would show cleared bugs as still overdue on the dashboard; a skipped run leaves the previous, consistent state in place.
+Write this run's files first; delete stale ones second; derive the note from the folder last. In that order a refused deletion can leave an extra file but never a dashboard that disagrees with itself.
 
 For each entry in the script's `current_state.violations` for this project (customer-reported P1–P3 with `ttr_deadline <= COLLECTION_DATE` — the same scope as the quarterly TTR metric, so the violation files and the percentages always agree):
 
@@ -261,7 +259,9 @@ link: https://{JIRA_BASE_URL}/browse/{BUG_KEY}
 ---
 ```
 
-Body: leave empty. These files are DERIVED — delete and recreate each run.
+Body: leave empty. These files are DERIVED — overwritten each run; a file for a bug that is still in violation is simply rewritten.
+
+**Then remove the stale ones.** Use `Glob` to find existing files matching `UX Bugs/Tracking/TTR Violations/{project_key_lowercase}-*.md` that this run did not write (bugs no longer in violation). Delete each with `rm` through `Bash`. Deletion is destructive and `Bash(rm:*)` is not in `allowed-tools`, so the harness asks the operator to confirm each removal; do not work around the prompt. A declined or unanswered prompt leaves that file in place: continue, and list every file left behind, with its reason, in the run report. The current-state note below counts what is on disk, so the folder, the base block and the headline agree whatever was refused; a left-behind file shows as still overdue until a later run removes it.
 
 ### Current State Notes
 
@@ -269,7 +269,7 @@ For each project in `PROJECT_KEYS`:
 
 **File:** `UX Bugs/Tracking/{project_key_lowercase}-uxbugs-current-state.md`
 
-This file is DERIVED — safe to overwrite each run. N = `current_state.open_total`, M = violation count, S = `current_state.ttr_scope_open`, PCT_INT = percentage of the TTR scope rounded to the nearest integer (never of all open bugs — mixing the two denominators is how 5 of 10 read as 24%).
+This file is DERIVED — safe to overwrite each run. N = `current_state.open_total`, M = the number of this project's violation files on disk after the deletions above (`Glob` the folder again; this is what the base block below lists, so count it, not the script's list), S = `current_state.ttr_scope_open`, PCT_INT = percentage of the TTR scope rounded to the nearest integer (never of all open bugs — mixing the two denominators is how 5 of 10 read as 24%).
 
 **Frontmatter:**
 
